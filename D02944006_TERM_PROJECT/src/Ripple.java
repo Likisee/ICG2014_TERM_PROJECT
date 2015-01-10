@@ -144,6 +144,22 @@ public class Ripple extends Applet implements ComponentListener {
 
 class RippleFrame extends Frame implements ComponentListener, ActionListener, AdjustmentListener, MouseMotionListener, MouseListener, ItemListener {
 
+	public String getAppletInfo() {
+		return "CYMATICS Player by CSu (D02944006@ntu.edu.tw)";
+	}
+	
+	RippleCanvas cv;
+	
+	Ripple applet;
+
+	RippleFrame(Ripple a) {
+		super("CYMATICS Music Player");
+		applet = a;
+		useFrame = true;
+		showControls = true;
+		adjustResolution = true;
+	}
+	
 	Thread engine = null;
 
 	Dimension winSize;
@@ -162,10 +178,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	int windowRight = 0;
 	public static final int sourceRadius = 7;
 	public static final double freqMult = .0233333;
-
-	public String getAppletInfo() {
-		return "CYMATICS Player by CSu (D02944006@ntu.edu.tw)";
-	}
 
 	Container main;
 	Button blankButton;
@@ -225,7 +237,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	int sourceWaveform = SWF_SIN;
 	int auxFunction;
 	long startTime;
-	Color wallColor, posColor, negColor, zeroColor, medColor, posMedColor, negMedColor, sourceColor;
+	Color wallColor, posColor, negColor, zeroColor, sourceColor;
 	Color schemeColors[][];
 	Method timerMethod;
 	int timerDiv;
@@ -262,17 +274,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		if (q < 0)
 			q = -q;
 		return q % x;
-	}
-
-	RippleCanvas cv;
-	Ripple applet;
-
-	RippleFrame(Ripple a) {
-		super("CYMATICS Player");
-		applet = a;
-		useFrame = true;
-		showControls = true;
-		adjustResolution = true;
 	}
 
 	boolean useBufferedImage = false;
@@ -713,22 +714,25 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 			handleResize();
 			return;
 		}
+		
+		long sysTime = getTimeMillis();
+		
 		if (increaseResolution) {
 			increaseResolution = false;
 			if (resBar.getValue() < 495)
 				setResolution(resBar.getValue() + 10);
 		}
-		long sysTime = getTimeMillis();
+		
 		double tadd = 0;
 		if (!stoppedCheck.getState()) {
 			int val = 5; // speedBar.getValue();
 			tadd = val * .05;
 		}
-		int i, j;
 
 		boolean stopFunc = dragging && selectedSource == -1 && view3dCheck.getState() == false && modeChooser.getSelectedIndex() == MODE_SETFUNC;
 		if (stoppedCheck.getState())
 			stopFunc = true;
+		
 		int iterCount = speedBar.getValue();
 		if (!stopFunc) {
 			/*
@@ -759,7 +763,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 				float sinth = 0;
 				float scaleo = 0;
 				int curMedium = -1;
-				for (j = jstart; j != jend; j += jinc) {
+				for (int j = jstart; j != jend; j += jinc) {
 					int istart, iend, iinc;
 					if (moveRight) {
 						iinc = 1;
@@ -871,7 +875,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 					}
 						break;
 					}
-					for (j = 0; j != sourceCount; j++) {
+					for (int j = 0; j != sourceCount; j++) {
 						if ((j % 2) == 0)
 							sources[j].v = (float) (v * setup.sourceStrength());
 						else
@@ -879,7 +883,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 					}
 					if (sourcePlane) {
 						if (!skip) {
-							for (j = 0; j != sourceCount / 2; j++) {
+							for (int j = 0; j != sourceCount / 2; j++) {
 								OscSource src1 = sources[j * 2];
 								OscSource src2 = sources[j * 2 + 1];
 								OscSource src3 = sources[j];
@@ -899,7 +903,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 							sy += windowOffsetY + 1;
 							sources[0].y = sy;
 						}
-						for (i = 0; i != sourceCount; i++) {
+						for (int i = 0; i != sourceCount; i++) {
 							OscSource src = sources[i];
 							func[src.x + gw * src.y] = src.v;
 							funci[src.x + gw * src.y] = 0;
@@ -1042,18 +1046,17 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 					colR = wallColor.getRed();
 					colG = wallColor.getGreen();
 					colB = wallColor.getBlue();
-				} else if (dy < 0) {
+				} 
+				else if (dy < 0) {
 					double d1 = -dy;
 					double d2 = 1 - d1;
 					double d3 = medium[gi] * (1 / 255.01);
 					double d4 = 1 - d3;
 					double a1 = d1 * d4;
 					double a2 = d2 * d4;
-					double a3 = d1 * d3;
-					double a4 = d2 * d3;
-					colR = (int) (negColor.getRed() * a1 + zeroColor.getRed() * a2 + negMedColor.getRed() * a3 + medColor.getRed() * a4);
-					colG = (int) (negColor.getGreen() * a1 + zeroColor.getGreen() * a2 + negMedColor.getGreen() * a3 + medColor.getGreen() * a4);
-					colB = (int) (negColor.getBlue() * a1 + zeroColor.getBlue() * a2 + negMedColor.getBlue() * a3 + medColor.getBlue() * a4);
+					colR = (int) (negColor.getRed() * a1 + zeroColor.getRed() * a2);
+					colG = (int) (negColor.getGreen() * a1 + zeroColor.getGreen() * a2);
+					colB = (int) (negColor.getBlue() * a1 + zeroColor.getBlue() * a2);
 				} else {
 					double d1 = dy;
 					double d2 = 1 - dy;
@@ -1061,11 +1064,9 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 					double d4 = 1 - d3;
 					double a1 = d1 * d4;
 					double a2 = d2 * d4;
-					double a3 = d1 * d3;
-					double a4 = d2 * d3;
-					colR = (int) (posColor.getRed() * a1 + zeroColor.getRed() * a2 + posMedColor.getRed() * a3 + medColor.getRed() * a4);
-					colG = (int) (posColor.getGreen() * a1 + zeroColor.getGreen() * a2 + posMedColor.getGreen() * a3 + medColor.getGreen() * a4);
-					colB = (int) (posColor.getBlue() * a1 + zeroColor.getBlue() * a2 + posMedColor.getBlue() * a3 + medColor.getBlue() * a4);
+					colR = (int) (posColor.getRed() * a1 + zeroColor.getRed() * a2);
+					colG = (int) (posColor.getGreen() * a1 + zeroColor.getGreen() * a2);
+					colB = (int) (posColor.getBlue() * a1 + zeroColor.getBlue() * a2);	
 				}
 				col = (255 << 24) | (colR << 16) | (colG << 8) | (colB);
 				for (k = 0; k != x2 - x; k++, ix++)
@@ -1682,16 +1683,13 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		posColor = schemeColors[cn][1];
 		negColor = schemeColors[cn][2];
 		zeroColor = schemeColors[cn][3];
-		posMedColor = schemeColors[cn][4];
-		negMedColor = schemeColors[cn][5];
-		medColor = schemeColors[cn][6];
-		sourceColor = schemeColors[cn][7];
+		sourceColor = schemeColors[cn][4];
 	}
 
 	void addDefaultColorScheme() {
-
-		String schemes[] = { "#000000 #0029A3 #335CD6 #0033CC #000000 #000000 #000000 #CC0000", 
-				"#800000 #ffffff #000000 #808080 #000000 #000000 #000000 #CC0000" };
+		
+		String schemes[] = { "#000000 #0029A3 #335CD6 #0033CC #CC0000", 
+				"#800000 #ffffff #000000 #808080 #CC0000" };
 		int i;
 
 		for (i = 0; i != 2; i++)
@@ -1702,7 +1700,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		StringTokenizer st = new StringTokenizer(s);
 		while (st.hasMoreTokens()) {
 			int i;
-			for (i = 0; i != 8; i++)
+			for (i = 0; i != 5; i++)
 				schemeColors[cn][i] = Color.decode(st.nextToken());
 		}
 		colorChooser.add("Color Scheme " + (cn + 1));
