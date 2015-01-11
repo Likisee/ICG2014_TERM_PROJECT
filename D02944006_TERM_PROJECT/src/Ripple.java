@@ -225,23 +225,30 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	static final int AUX_FREQ = 2;
 	static final int AUX_SPEED = 3;
 	
+//	static final int SRC_NONE = 0;
+//	static final int SRC_1S1F = 1;
+//	static final int SRC_2S1F = 3;
+//	static final int SRC_2S2F = 4;
+//	static final int SRC_4S1F = 6;
+//	static final int SRC_1S1F_PULSE = 8;
+//	static final int SRC_1S1F_MOVING = 9;
+//	static final int SRC_1S1F_PLANE = 10;
+//	static final int SRC_2S1F_PLANE = 12;
+//	static final int SRC_1S1F_PLANE_PULSE = 14;
+//	static final int SRC_1S1F_PLANE_PHASE = 15;
+//	static final int SRC_6S1F = 16;
+//	static final int SRC_8S1F = 17;
+//	static final int SRC_10S1F = 18;
+//	static final int SRC_12S1F = 19;
+//	static final int SRC_16S1F = 20;
+//	static final int SRC_20S1F = 21;
 	static final int SRC_NONE = 0;
 	static final int SRC_1S1F = 1;
-	static final int SRC_2S1F = 3;
-	static final int SRC_2S2F = 4;
-	static final int SRC_4S1F = 6;
-	static final int SRC_1S1F_PULSE = 8;
-	static final int SRC_1S1F_MOVING = 9;
-	static final int SRC_1S1F_PLANE = 10;
-	static final int SRC_2S1F_PLANE = 12;
-	static final int SRC_1S1F_PLANE_PULSE = 14;
-	static final int SRC_1S1F_PLANE_PHASE = 15;
-	static final int SRC_6S1F = 16;
-	static final int SRC_8S1F = 17;
-	static final int SRC_10S1F = 18;
-	static final int SRC_12S1F = 19;
-	static final int SRC_16S1F = 20;
-	static final int SRC_20S1F = 21;
+	static final int SRC_2S1F = 2;
+	static final int SRC_4S1F = 3;
+	static final int SRC_1S1F_MOVING = 4;
+	static final int SRC_1S1F_PLANE = 5;
+	static final int SRC_2S1F_PLANE = 6;
 	
 	static final int MODE_SETFUNC = 0;
 	static final int MODE_WALLS = 1;
@@ -380,28 +387,35 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 //		add(new Label("Source mode:", Label.CENTER));
 		sources = new OscSource[20];
 		sourceChooser = new Choice();
-		sourceChooser.add("No Sources");
-		sourceChooser.add("1 Src, 1 Freq");
-		sourceChooser.add("1 Src, 2 Freq");
-		sourceChooser.add("2 Src, 1 Freq");
-		sourceChooser.add("2 Src, 2 Freq");
-		sourceChooser.add("3 Src, 1 Freq");
-		sourceChooser.add("4 Src, 1 Freq");
-		sourceChooser.add("1 Src, 1 Freq (Square)");
-		sourceChooser.add("1 Src, 1 Freq (Pulse)");
-		sourceChooser.add("1 Moving Src");
-		sourceChooser.add("1 Plane Src, 1 Freq");
-		sourceChooser.add("1 Plane Src, 2 Freq");
-		sourceChooser.add("2 Plane Src, 1 Freq");
-		sourceChooser.add("2 Plane Src, 2 Freq");
-		sourceChooser.add("1 Plane 1 Freq (Pulse)");
-		sourceChooser.add("1 Plane 1 Freq w/Phase");
-		sourceChooser.add("6 Src, 1 Freq");
-		sourceChooser.add("8 Src, 1 Freq");
-		sourceChooser.add("10 Src, 1 Freq");
-		sourceChooser.add("12 Src, 1 Freq");
-		sourceChooser.add("16 Src, 1 Freq");
-		sourceChooser.add("20 Src, 1 Freq");
+//		sourceChooser.add("No Sources");	// 0 -> 0
+//		sourceChooser.add("1 Src, 1 Freq");	// 1 -> 1
+//		sourceChooser.add("1 Src, 2 Freq");	// 2
+//		sourceChooser.add("2 Src, 1 Freq");	// 3 -> 2
+//		sourceChooser.add("2 Src, 2 Freq");	// 4
+//		sourceChooser.add("3 Src, 1 Freq");	// 5
+//		sourceChooser.add("4 Src, 1 Freq");	// 6 -> 3
+//		sourceChooser.add("1 Src, 1 Freq (Square)");
+//		sourceChooser.add("1 Src, 1 Freq (Pulse)");
+//		sourceChooser.add("1 Moving Src");	// 9 -> 4
+//		sourceChooser.add("1 Plane Src, 1 Freq");	// 10 -> 5
+//		sourceChooser.add("1 Plane Src, 2 Freq");	// 11
+//		sourceChooser.add("2 Plane Src, 1 Freq");	// 12 -> 6
+//		sourceChooser.add("2 Plane Src, 2 Freq");	// 13
+//		sourceChooser.add("1 Plane 1 Freq (Pulse)");
+//		sourceChooser.add("1 Plane 1 Freq w/Phase");
+//		sourceChooser.add("6 Src, 1 Freq");
+//		sourceChooser.add("8 Src, 1 Freq");
+//		sourceChooser.add("10 Src, 1 Freq");
+//		sourceChooser.add("12 Src, 1 Freq");
+//		sourceChooser.add("16 Src, 1 Freq");
+//		sourceChooser.add("20 Src, 1 Freq");
+		sourceChooser.add("No Sources");	// 0
+		sourceChooser.add("1 Src, 1 Freq");	// 1
+		sourceChooser.add("2 Src, 1 Freq");	// 2
+		sourceChooser.add("4 Src, 1 Freq");	// 3
+		sourceChooser.add("1 Moving Src");	// 4
+		sourceChooser.add("1 Plane Src, 1 Freq");	// 5
+		sourceChooser.add("2 Plane Src, 1 Freq");	// 6
 		sourceChooser.select(SRC_1S1F);
 		sourceChooser.addItemListener(this);
 		if (showControls) {
@@ -1791,94 +1805,125 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	}
 
 	void setSources() {
-		sourceIndex = sourceChooser.getSelectedIndex();
 		int oldSCount = sourceCount;
 		boolean oldPlane = sourcePlane;
+		
+		sourceIndex = sourceChooser.getSelectedIndex();
+//		sourcePlane = (sourceChooser.getSelectedIndex() >= SRC_1S1F_PLANE && sourceChooser.getSelectedIndex() < SRC_6S1F);
+		sourcePlane = (sourceChooser.getSelectedIndex() >= SRC_1S1F_PLANE && sourceChooser.getSelectedIndex() <= SRC_2S1F_PLANE );
+		
+		sourceCount = 1;
 		sourceFreqCount = 1;
-		sourcePlane = (sourceChooser.getSelectedIndex() >= SRC_1S1F_PLANE && sourceChooser.getSelectedIndex() < SRC_6S1F);
 		sourceMoving = false;
 		sourceWaveform = SWF_SIN;
-		sourceCount = 1;
-		boolean phase = false;
+//		boolean phase = false;
+		
+		
 		switch (sourceChooser.getSelectedIndex()) {
+//		case 0:
+//			sourceCount = 0;
+//			break;
+//		case 2:
+//			sourceFreqCount = 2;
+//			break;
+//		case 3:
+//			sourceCount = 2;
+//			break;
+//		case 4:
+//			sourceCount = 2;
+//			sourceFreqCount = 2;
+//			break;
+//		case 5:
+//			sourceCount = 3;
+//			break;
+//		case 6:
+//			sourceCount = 4;
+//			break;
+//		case 7:
+//			sourceWaveform = SWF_SQUARE;
+//			break;
+//		case 8:
+//			sourceWaveform = SWF_PULSE;
+//			break;
+//		case 9:
+//			sourceMoving = true;
+//			break;
+//		case 11:
+//			sourceFreqCount = 2;
+//			break;
+//		case 12:
+//			sourceCount = 2;
+//			break;
+//		case 13:
+//			sourceCount = sourceFreqCount = 2;
+//			break;
+//		case 14:
+//			sourceWaveform = SWF_PULSE;
+//			break;
+//		case 15:
+//			phase = true;
+//			break;
+//		case 16:
+//			sourceCount = 6;
+//			break;
+//		case 17:
+//			sourceCount = 8;
+//			break;
+//		case 18:
+//			sourceCount = 10;
+//			break;
+//		case 19:
+//			sourceCount = 12;
+//			break;
+//		case 20:
+//			sourceCount = 16;
+//			break;
+//		case 21:
+//			sourceCount = 20;
+//			break;
+//		}
 		case 0:
 			sourceCount = 0;
 			break;
 		case 2:
-			sourceFreqCount = 2;
+			sourceCount = 2;
 			break;
 		case 3:
-			sourceCount = 2;
-			break;
-		case 4:
-			sourceCount = 2;
-			sourceFreqCount = 2;
-			break;
-		case 5:
-			sourceCount = 3;
-			break;
-		case 6:
 			sourceCount = 4;
 			break;
-		case 7:
-			sourceWaveform = SWF_SQUARE;
-			break;
-		case 8:
-			sourceWaveform = SWF_PULSE;
-			break;
-		case 9:
+		case 4:
 			sourceMoving = true;
 			break;
-		case 11:
-			sourceFreqCount = 2;
-			break;
-		case 12:
+		case 6:
 			sourceCount = 2;
 			break;
-		case 13:
-			sourceCount = sourceFreqCount = 2;
-			break;
-		case 14:
-			sourceWaveform = SWF_PULSE;
-			break;
-		case 15:
-			phase = true;
-			break;
-		case 16:
-			sourceCount = 6;
-			break;
-		case 17:
-			sourceCount = 8;
-			break;
-		case 18:
-			sourceCount = 10;
-			break;
-		case 19:
-			sourceCount = 12;
-			break;
-		case 20:
-			sourceCount = 16;
-			break;
-		case 21:
-			sourceCount = 20;
-			break;
 		}
-		if (sourceFreqCount >= 2) {
-			auxFunction = AUX_FREQ;
-			auxBar.setValue(freqBar.getValue());
-			if (sourceCount == 2)
-				auxLabel.setText("Source 2 Frequency");
-			else
-				auxLabel.setText("2nd Frequency");
-		} else if (sourceCount == 2 || sourceCount >= 4 || phase) {
-			auxFunction = AUX_PHASE;
-			auxBar.setValue(1);
-			auxLabel.setText("Phase Difference");
-		} else if (sourceMoving) {
+		
+//		if (sourceFreqCount >= 2) {
+//			auxFunction = AUX_FREQ;
+//			auxBar.setValue(freqBar.getValue());
+//			if (sourceCount == 2)
+//				auxLabel.setText("Source 2 Frequency");
+//			else
+//				auxLabel.setText("2nd Frequency");
+//		} else if (sourceCount == 2 || sourceCount >= 4 || phase) {
+//			auxFunction = AUX_PHASE;
+//			auxBar.setValue(1);
+//			auxLabel.setText("Phase Difference");
+//		} else if (sourceMoving) {
+//			auxFunction = AUX_SPEED;
+//			auxBar.setValue(7);
+//			auxLabel.setText("Source Speed");
+//		} else {
+//			auxFunction = AUX_NONE;
+//			auxBar.hide();
+//			auxLabel.hide();
+//		}
+		if (sourceMoving) {
 			auxFunction = AUX_SPEED;
 			auxBar.setValue(7);
 			auxLabel.setText("Source Speed");
-		} else {
+		}  else {
 			auxFunction = AUX_NONE;
 			auxBar.hide();
 			auxLabel.hide();
@@ -1899,14 +1944,14 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 				sources[2] = new OscSource(windowOffsetX, y2);
 				sources[3] = new OscSource(x2, y2);
 			}
-		} else if (!(oldSCount == sourceCount && !oldPlane)) {
+		} else if (!(!oldPlane && oldSCount == sourceCount)) {
 			sources[0] = new OscSource(gridSizeX / 2, windowOffsetY + 1);
 			sources[1] = new OscSource(gridSizeX / 2, gridSizeY - windowOffsetY - 2);
 			sources[2] = new OscSource(windowOffsetX + 1, gridSizeY / 2);
 			sources[3] = new OscSource(gridSizeX - windowOffsetX - 2, gridSizeY / 2);
-			int i;
-			for (i = 4; i < sourceCount; i++)
-				sources[i] = new OscSource(windowOffsetX + 1 + i * 2, gridSizeY / 2);
+//			for (int i = 4; i < sourceCount; i++) {
+//				sources[i] = new OscSource(windowOffsetX + 1 + i * 2, gridSizeY / 2);
+//			}
 		}
 	}
 
