@@ -495,8 +495,9 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 			}
 			
 		} catch (Exception e) {
-			if (applet != null)
+			if (applet != null) {
 				e.printStackTrace();
+			}
 		}
 		if (colorChooser.getItemCount() == 0) {
 			addDefaultColorScheme();
@@ -538,13 +539,17 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		damp = new float[gridSizeXY];
 		exceptional = new boolean[gridSizeXY];
 		int i, j;
-		for (i = 0; i != gridSizeXY; i++)
+		for (i = 0; i != gridSizeXY; i++) {
 			damp[i] = 1f; // (float) dampcoef;
-		for (i = 0; i != windowOffsetX; i++)
-			for (j = 0; j != gridSizeX; j++)
+		}
+		for (i = 0; i != windowOffsetX; i++) {
+			for (j = 0; j != gridSizeX; j++) {
 				damp[i + j * gw] = damp[gridSizeX - 1 - i + gw * j] = damp[j + gw * i] = damp[j + (gridSizeY - 1 - i) * gw] = (float) (.999 - (windowOffsetX - i) * .002);
-		if (setup)
+			}
+		}
+		if (setup) {
 			doSetup();
+		}
 
 	}
 
@@ -558,18 +563,12 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 
 	void handleResize() {
 		Dimension d = winSize = cv.getSize();
-		if (winSize.width == 0)
+		if (winSize.width == 0) {
 			return;
+		}
 		pixels = null;
 		if (useBufferedImage) {
 			try {
-				/*
-				 * simulate the following code using reflection: dbimage = new
-				 * BufferedImage(d.width, d.height, BufferedImage.TYPE_INT_RGB);
-				 * DataBuffer db = (DataBuffer)(((BufferedImage)dbimage).
-				 * getRaster().getDataBuffer()); DataBufferInt dbi =
-				 * (DataBufferInt) db; pixels = dbi.getData();
-				 */
 				Class biclass = Class.forName("java.awt.image.BufferedImage");
 				Class dbiclass = Class.forName("java.awt.image.DataBufferInt");
 				Class rasclass = Class.forName("java.awt.image.Raster");
@@ -580,7 +579,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 				Object db = rasclass.getMethod("getDataBuffer", null).invoke(ras, null);
 				pixels = (int[]) dbiclass.getMethod("getData", null).invoke(db, null);
 			} catch (Exception ee) {
-				// ee.printStackTrace();
 				System.out.println("BufferedImage failed");
 			}
 		}
@@ -614,8 +612,9 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 
 	void doBlank() {
 		int x, y;
-		for (x = 0; x != gridSizeXY; x++)
+		for (x = 0; x != gridSizeXY; x++) {
 			func[x] = funci[x] = 1e-10f;
+		}
 	}
 
 	void doBlankWalls() {
@@ -704,8 +703,9 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		
 		if (increaseResolution) {
 			increaseResolution = false;
-			if (resBar.getValue() < 495)
+			if (resBar.getValue() < 495) {
 				setResolution(resBar.getValue() + 10);
+			}
 		}
 		
 		double tadd = 0;
@@ -715,8 +715,9 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		}
 
 		boolean stopFunc = dragging && selectedSource == -1 && is3dView == false && modeChooser.getSelectedIndex() == MODE_SETFUNC;
-		if (stoppedCheck.getState())
+		if (stoppedCheck.getState()) {
 			stopFunc = true;
+		}
 		
 		int iterCount = speedBar.getValue();
 		if (!stopFunc) {
@@ -772,31 +773,19 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 							if (walls[gi])
 								continue;
 							if (fixedEndsCheck.getState()) {
-								if (walls[gi - 1])
-									previ = 0;
-								if (walls[gi + 1])
-									nexti = 0;
-								if (walls[gi - gw])
-									prevj = 0;
-								if (walls[gi + gw])
-									nextj = 0;
+								if (walls[gi - 1])	previ = 0;
+								if (walls[gi + 1])	nexti = 0;
+								if (walls[gi - gw])	prevj = 0;
+								if (walls[gi + gw])	nextj = 0;
 							} else {
-								if (walls[gi - 1])
-									previ = walls[gi + 1] ? func[gi] : func[gi + 1];
-								if (walls[gi + 1])
-									nexti = walls[gi - 1] ? func[gi] : func[gi - 1];
-								if (walls[gi - gw])
-									prevj = walls[gi + gw] ? func[gi] : func[gi + gw];
-								if (walls[gi + gw])
-									nextj = walls[gi - gw] ? func[gi] : func[gi - gw];
+								if (walls[gi - 1])	previ = walls[gi + 1] ? func[gi] : func[gi + 1];
+								if (walls[gi + 1])	nexti = walls[gi - 1] ? func[gi] : func[gi - 1];
+								if (walls[gi - gw])	prevj = walls[gi + gw] ? func[gi] : func[gi + gw];
+								if (walls[gi + gw])	nextj = walls[gi - gw] ? func[gi] : func[gi - gw];
 							}
 							basis = (nexti + previ + nextj + prevj) * .25f;
 						}
-						// what we are doing here (aside from damping)
-						// is rotating the point (func[gi], funci[gi])
-						// an angle tadd about the point (basis, 0).
-						// Rather than call atan2/sin/cos, we use this
-						// faster method using some precomputed info.
+						// what we are doing here (aside from damping) is rotating the point (func[gi], funci[gi]) an angle tadd about the point (basis, 0). Rather than call atan2/sin/cos, we use this faster method using some precomputed info.
 						float a = 0;
 						float b = 0;
 						if (damp[gi] == 1f) {
@@ -828,10 +817,11 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 					switch (sourceWaveform) {
 					case SWF_SIN:
 						v = Math.cos(w);
-						if (sourceCount >= (sourcePlane ? 4 : 2))
+						if (sourceCount >= (sourcePlane ? 4 : 2)) {
 							v2 = Math.cos(w2);
-						else if (sourceFreqCount == 2)
+						} else if (sourceFreqCount == 2) {
 							v = (v + Math.cos(w2)) * .5;
+						}
 						break;
 					case SWF_SQUARE:
 						w %= pi * 2;
@@ -841,19 +831,22 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 						w %= pi * 2;
 						double pulselen = pi / 4;
 						double pulselen2 = freqBar.getValue() * .2;
-						if (pulselen2 < pulselen)
+						if (pulselen2 < pulselen) {
 							pulselen = pulselen2;
+						}
 						v = (w > pulselen) ? 0 : Math.sin(w * pi / pulselen);
-						if (w > pulselen * 2)
+						if (w > pulselen * 2) {
 							skip = true;
+						}
 					}
 						break;
 					}
 					for (int j = 0; j != sourceCount; j++) {
-						if ((j % 2) == 0)
+						if ((j % 2) == 0) {
 							sources[j].v = (float) (v * setup.sourceStrength());
-						else
+						} else{
 							sources[j].v = (float) (v2 * setup.sourceStrength());
+						}
 					}
 					if (sourcePlane) {
 						if (!skip) {
@@ -872,8 +865,9 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 							int h = windowHeight - 3;
 							wm %= h * 2;
 							sy = (int) wm;
-							if (sy > h)
+							if (sy > h) {
 								sy = 2 * h - sy;
+							}
 							sy += windowOffsetY + 1;
 							sources[0].y = sy;
 						}
@@ -891,13 +885,15 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		}
 
 		brightMult = Math.exp(brightnessBar.getValue() / 100. - 5.);
-		if (is3dView)
+		if (is3dView) {
 			draw3dView();
-		else
+		} else {
 			draw2dView();
+		}
 
-		if (imageSource != null)
+		if (imageSource != null) {
 			imageSource.newPixels();
+		}
 
 		realg.drawImage(dbimage, 0, 0, this);
 		if (dragStartX >= 0 && !is3dView) {
@@ -928,34 +924,44 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 
 	void filterGrid() {
 		int x, y;
-		if (fixedEndsCheck.getState())
+		if (fixedEndsCheck.getState()) {
 			return;
-		if (sourceCount > 0 && freqBarValue > 23)
+		}
+		if (sourceCount > 0 && freqBarValue > 23) {
 			return;
-		if (sourceFreqCount >= 2 && auxBar.getValue() > 23)
+		}
+		if (sourceFreqCount >= 2 && auxBar.getValue() > 23) {
 			return;
-		if (++filterCount < 10)
+		}
+		if (++filterCount < 10) {
 			return;
+		}
 		filterCount = 0;
 		for (y = windowOffsetY; y < windowBottom; y++)
 			for (x = windowOffsetX; x < windowRight; x++) {
 				int gi = x + y * gw;
-				if (walls[gi])
+				if (walls[gi]) {
 					continue;
-				if (func[gi - 1] < 0 && func[gi] > 0 && func[gi + 1] < 0 && !walls[gi + 1] && !walls[gi - 1])
+				}
+				if (func[gi - 1] < 0 && func[gi] > 0 && func[gi + 1] < 0 && !walls[gi + 1] && !walls[gi - 1]) {
 					func[gi] = (func[gi - 1] + func[gi + 1]) / 2;
-				if (func[gi - gw] < 0 && func[gi] > 0 && func[gi + gw] < 0 && !walls[gi - gw] && !walls[gi + gw])
+				}
+				if (func[gi - gw] < 0 && func[gi] > 0 && func[gi + gw] < 0 && !walls[gi - gw] && !walls[gi + gw]) {
 					func[gi] = (func[gi - gw] + func[gi + gw]) / 2;
-				if (func[gi - 1] > 0 && func[gi] < 0 && func[gi + 1] > 0 && !walls[gi + 1] && !walls[gi - 1])
+				}
+				if (func[gi - 1] > 0 && func[gi] < 0 && func[gi + 1] > 0 && !walls[gi + 1] && !walls[gi - 1]) {
 					func[gi] = (func[gi - 1] + func[gi + 1]) / 2;
-				if (func[gi - gw] > 0 && func[gi] < 0 && func[gi + gw] > 0 && !walls[gi - gw] && !walls[gi + gw])
+				}
+				if (func[gi - gw] > 0 && func[gi] < 0 && func[gi + gw] > 0 && !walls[gi - gw] && !walls[gi + gw]) {
 					func[gi] = (func[gi - gw] + func[gi + gw]) / 2;
+				}
 			}
 	}
 
 	void plotPixel(int x, int y, int pix) {
-		if (x < 0 || x >= winSize.width)
+		if (x < 0 || x >= winSize.width) {
 			return;
+		}
 		try {
 			pixels[x + y * winSize.width] = pix;
 		} catch (Exception e) {
@@ -967,8 +973,9 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		int rad = sourceRadius;
 		int j;
 		int col = (sourceColor.getRed() << 16) | (sourceColor.getGreen() << 8) | (sourceColor.getBlue()) | 0xFF000000;
-		if (n == selectedSource)
+		if (n == selectedSource) {
 			col ^= 0xFFFFFF;
+		}
 		for (j = 0; j <= rad; j++) {
 			int k = (int) (Math.sqrt(rad * rad - j * j) + .5);
 			plotPixel(xx + j, yy + k, col);
@@ -1025,9 +1032,11 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 					colB = (int) (posColor.getBlue() * d1 + zeroColor.getBlue() * d2);
 				}
 				col = (255 << 24) | (colR << 16) | (colG << 8) | (colB);
-				for (k = 0; k != x2 - x; k++, ix++)
-					for (l = 0; l != y2 - y; l++)
+				for (k = 0; k != x2 - x; k++, ix++) {
+					for (l = 0; l != y2 - y; l++) {
 						pixels[ix + l * winSize.width] = col;
+					}
+				}
 			}
 		}
 		int intf = (gridSizeY / 2 - windowOffsetY) * winSize.height / windowHeight;
@@ -1105,16 +1114,18 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		}
 		boolean xFirst = (viewAngleSin * xdir < viewAngleCos * ydir);
 
-		for (x = 0; x != winSize.width * winSize.height; x++)
+		for (x = 0; x != winSize.width * winSize.height; x++) {
 			pixels[x] = 0xFF000000;
+		}
 
 		double zval = .1;
 		double zval2 = zval * zval;
 
 		for (x = xstart; x != xend; x += xdir) {
 			for (y = ystart; y != yend; y += ydir) {
-				if (!xFirst)
+				if (!xFirst) {
 					x = xstart;
+				}
 				for (; x != xend; x += xdir) {
 					int gi = x + gw * y;
 					map3d(x - half, y - half, func[gi], xpoints, ypoints, 0);
@@ -1128,8 +1139,9 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 					int col = computeColor(gi, normdot);
 					fillTriangle(xpoints[0], ypoints[0], xpoints[1], ypoints[1], xpoints[3], ypoints[3], col);
 					fillTriangle(xpoints[0], ypoints[0], xpoints[2], ypoints[2], xpoints[3], ypoints[3], col);
-					if (xFirst)
+					if (xFirst) {
 						break;
+					}
 				}
 			}
 			if (!xFirst)
@@ -1139,21 +1151,15 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 
 	int computeColor(int gix, double c) {
 		double h = func[gix] * brightMult;
-		if (c < 0)
-			c = 0;
-		if (c > 1)
-			c = 1;
+		if (c < 0)	c = 0;
+		if (c > 1)	c = 1;
 		c = .5 + c * .5;
 		double redness = (h < 0) ? -h : 0;
 		double grnness = (h > 0) ? h : 0;
-		if (redness > 1)
-			redness = 1;
-		if (grnness > 1)
-			grnness = 1;
-		if (grnness < 0)
-			grnness = 0;
-		if (redness < 0)
-			redness = 0;
+		if (redness > 1)	redness = 1;
+		if (grnness > 1)	grnness = 1;
+		if (grnness < 0)	grnness = 0;
+		if (redness < 0)	redness = 0;
 		double grayness = (1 - (redness + grnness)) * c;
 		double gray = .6;
 		int ri = (int) ((c * redness + gray * grayness) * 255);
@@ -1202,10 +1208,12 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	}
 
 	int interp(int x1, int y1, int x2, int y2, int x) {
-		if (x1 == x2)
+		if (x1 == x2) {
 			return y1;
-		if (x < x1 && x < x2 || x > x1 && x > x2)
+		}
+		if (x < x1 && x < x2 || x > x1 && x > x2) {
 			System.out.print("interp out of bounds\n");
+		}
 		return (int) (y1 + ((double) x - x1) * (y2 - y1) / (x2 - x1));
 	}
 
@@ -1215,13 +1223,15 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		int x = x1;
 		if (x < 0) {
 			x = 0;
-			if (x2 < 0)
+			if (x2 < 0) {
 				return;
+			}
 		}
 		if (x >= winSize.width) {
 			x = winSize.width - 1;
-			if (x2 >= winSize.width)
+			if (x2 >= winSize.width) {
 				return;
+			}
 		}
 		if (y2 > y3) {
 			int q = y2;
@@ -1233,16 +1243,20 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 			// XXX this could be speeded up
 			int ya = interp(x1, y1, x2, y2, x);
 			int yb = interp(x1, y1, x2, y3, x);
-			if (ya < 0)
+			if (ya < 0) {
 				ya = 0;
-			if (yb >= winSize.height)
+			}
+			if (yb >= winSize.height) {
 				yb = winSize.height - 1;
+			}
 
-			for (; ya <= yb; ya++)
+			for (; ya <= yb; ya++) {
 				pixels[x + ya * winSize.width] = col;
+			}
 			x += dir;
-			if (x < 0 || x >= winSize.width)
+			if (x < 0 || x >= winSize.width) {
 				return;
+			}
 		}
 	}
 
@@ -1252,24 +1266,32 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 
 	void drawPlaneSource(int x1, int y1, int x2, int y2, float v, double w) {
 		if (y1 == y2) {
-			if (x1 == windowOffsetX)
+			if (x1 == windowOffsetX) {
 				x1 = 0;
-			if (x2 == windowOffsetX)
+			}
+			if (x2 == windowOffsetX) {
 				x2 = 0;
-			if (x1 == windowOffsetX + windowWidth - 1)
+			}
+			if (x1 == windowOffsetX + windowWidth - 1) {
 				x1 = gridSizeX - 1;
-			if (x2 == windowOffsetX + windowWidth - 1)
+			}
+			if (x2 == windowOffsetX + windowWidth - 1) {
 				x2 = gridSizeX - 1;
+			}
 		}
 		if (x1 == x2) {
-			if (y1 == windowOffsetY)
+			if (y1 == windowOffsetY) {
 				y1 = 0;
-			if (y2 == windowOffsetY)
+			}
+			if (y2 == windowOffsetY) {
 				y2 = 0;
-			if (y1 == windowOffsetY + windowHeight - 1)
+			}
+			if (y1 == windowOffsetY + windowHeight - 1) {
 				y1 = gridSizeY - 1;
-			if (y2 == windowOffsetY + windowHeight - 1)
+			}
+			if (y2 == windowOffsetY + windowHeight - 1) {
 				y2 = gridSizeY - 1;
+			}
 		}
 
 		// need to draw a line from x1,y1 to x2,y2
@@ -1306,8 +1328,9 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	}
 
 	void edit(MouseEvent e) {
-		if (is3dView)
+		if (is3dView) {
 			return;
+		}
 		int x = e.getX();
 		int y = e.getY();
 		if (selectedSource != -1) {
@@ -1432,10 +1455,12 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 			setResolution();
 			reinit();
 		}
-		if (e.getSource() == brightnessBar)
+		if (e.getSource() == brightnessBar) {
 			cv.repaint(0);
-		if (e.getSource() == freqBar)
+		}
+		if (e.getSource() == freqBar) {
 			setFreq();
+		}
 	}
 
 	void setFreqBar(int x) {
@@ -1456,8 +1481,9 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	void setResolution() {
 		windowWidth = windowHeight = resBar.getValue();
 		int border = windowWidth / 9;
-		if (border < 20)
+		if (border < 20) {
 			border = 20;
+		}
 		windowOffsetX = windowOffsetY = border;
 		gridSizeX = windowWidth + windowOffsetX * 2;
 		gridSizeY = windowHeight + windowOffsetY * 2;
@@ -1485,8 +1511,9 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	}
 
 	public void mouseMoved(MouseEvent e) {
-		if (dragging)
+		if (dragging) {
 			return;
+		}
 		int x = e.getX();
 		int y = e.getY();
 		dragStartX = dragX = x;
@@ -1494,18 +1521,21 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		viewAngleDragStart = viewAngle;
 		viewHeightDragStart = viewHeight;
 		selectSource(e);
-		if (stoppedCheck.getState())
+		if (stoppedCheck.getState()) {
 			cv.repaint(0);
+		}
 	}
 
 	void view3dDrag(MouseEvent e) {
 		int x = e.getX();
 		int y = e.getY();
 		viewAngle = (dragStartX - x) / 40. + viewAngleDragStart;
-		while (viewAngle < 0)
+		while (viewAngle < 0) {
 			viewAngle += 2 * pi;
-		while (viewAngle >= 2 * pi)
+		}
+		while (viewAngle >= 2 * pi) {
 			viewAngle -= 2 * pi;
+		}
 		viewAngleCos = Math.cos(viewAngle);
 		viewAngleSin = Math.sin(viewAngle);
 		viewHeight = (dragStartY - y) / 10. + viewHeightDragStart;
