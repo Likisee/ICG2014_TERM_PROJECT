@@ -153,17 +153,13 @@ public class Ripple extends Applet implements ComponentListener {
 };
 
 class RippleFrame extends Frame implements ComponentListener, ActionListener, AdjustmentListener, MouseMotionListener, MouseListener, ItemListener {
-
-	public String getAppletInfo() {
-		return "CYMATICS Player by CSu (D02944006@ntu.edu.tw)";
-	}
 	
 	RippleCanvas cv;
 	
 	Ripple applet;
 
 	RippleFrame(Ripple a) {
-		super("CYMATICS Music Player");
+		super("CYMATICS Player by CSu (D02944006@ntu.edu.tw)");
 		applet = a;
 		useFrame = true;
 		showControls = true;
@@ -197,10 +193,10 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	Button blankButton;
 	Button blankWallsButton;
 	Button borderButton;
+	Button view3dButton;
 	
 	Checkbox stoppedCheck;
 	Checkbox fixedEndsCheck;
-	Checkbox view3dCheck;
 		
 	Scrollbar speedBar;
 	Scrollbar resBar;
@@ -239,6 +235,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	float damp[];
 	boolean exceptional[];
 	
+	MemoryImageSource imageSource;
 	public boolean useFrame;
 	boolean showControls;
 	boolean useBufferedImage = false;
@@ -246,45 +243,34 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	int timerDiv;
 	
 	Vector setupList;
-	Setup setup;	
-	
-
-	
-	
-	Label auxLabel;
-	double dampcoef;
-	double freqTimeZero;
-	double movingSourcePos = 0;
-	double brightMult = 1;
-	int dragX, dragY, dragStartX = -1, dragStartY;
-	int selectedSource = -1;
-	int sourceIndex;
-	int freqBarValue;
+	Setup setup;
+	boolean is3dView = false;
+	boolean adjustResolution = true;
+	boolean increaseResolution = false;
+	boolean sourcePlane = false;
+	boolean sourceMoving = false;
 	boolean dragging;
 	boolean dragClear;
 	boolean dragSet;
-	double t;
-	MemoryImageSource imageSource;
-	int pixels[];
+	int dragX, dragY, dragStartX = -1, dragStartY;
+	long startTime;
+	double dampcoef = 1;
+	double freqTimeZero;
+	double movingSourcePos = 0;
+	double brightMult = 1;
 	int sourceCount = -1;
-	boolean sourcePlane = false;
-	boolean sourceMoving = false;
-	boolean increaseResolution = false;
-	boolean adjustResolution = true;
+	int selectedSource = -1;
 	int sourceFreqCount = -1;
 	int sourceWaveform = SWF_SIN;
+	int sourceIndex;
+	int freqBarValue;
+	int pixels[];
+	Label auxLabel;
 	int auxFunction;
-	long startTime;
+	double t;
+	
 	Color wallColor, posColor, negColor, zeroColor, sourceColor;
 	Color schemeColors[][];
-
-//	int getrand(int x) {
-//		int q = random.nextInt();
-//		if (q < 0) {
-//			q = -q;
-//		}
-//		return q % x;
-//	}
 	
 	public void init() {
 		// useFrame? showControls? main!!
@@ -347,7 +333,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		setupChooser = new Choice();
 		int i;
 		for (i = 0; i != setupList.size(); i++) {
-			setupChooser.add("Setup: " + ((Setup) setupList.elementAt(i)).getName());
+			setupChooser.add("預設主題: " + ((Setup) setupList.elementAt(i)).getName());
 		}
 		setupChooser.addItemListener(this);
 		if (showControls) {
@@ -357,13 +343,13 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		// Initial OscSource & sourceChooser
 		sources = new OscSource[20];
 		sourceChooser = new Choice();
-		sourceChooser.add("No Sources");			// 0
-		sourceChooser.add("1 Src, 1 Freq");			// 1
-		sourceChooser.add("2 Src, 1 Freq");			// 2
-		sourceChooser.add("4 Src, 1 Freq");			// 3
-		sourceChooser.add("1 Moving Src");			// 4
-		sourceChooser.add("1 Plane Src, 1 Freq");	// 5
-		sourceChooser.add("2 Plane Src, 1 Freq");	// 6
+		sourceChooser.add("無");			// 0
+		sourceChooser.add("1點波源");	// 1
+		sourceChooser.add("2點波源");	// 2
+		sourceChooser.add("4點波源");	// 3
+		sourceChooser.add("移動波源");	// 4
+		sourceChooser.add("1線波源");	// 5
+		sourceChooser.add("2線波源");	// 6
 		sourceChooser.select(SRC_1S1F);
 		sourceChooser.addItemListener(this);
 		if (showControls) {
@@ -372,8 +358,8 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 
 		// Initial modeChooser
 		modeChooser = new Choice();
-		modeChooser.add("Mouse = Edit Wave");
-		modeChooser.add("Mouse = Edit Walls");
+		modeChooser.add("產生水波紋");
+		modeChooser.add("編輯障礙物");
 		modeChooser.addItemListener(this);
 		if (showControls) {
 			main.add(modeChooser);
@@ -389,68 +375,78 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		}
 
 		// Initial blankButton
-		blankButton = new Button("Clear Waves");
+		blankButton = new Button("清空水波");
+		blankButton.setFont(new Font( "Arial" , Font.BOLD , 40 ));
 		if (showControls) {
 			main.add(blankButton);
 		}
 		blankButton.addActionListener(this);
 		
 		// Initial blankWallsButton
-		blankWallsButton = new Button("Clear Walls");
+		blankWallsButton = new Button("清空邊界");
+		blankWallsButton.setFont(new Font( "Arial" , Font.BOLD , 40 ));
 		if (showControls) {
 			main.add(blankWallsButton);
 		}
 		blankWallsButton.addActionListener(this);
 		
 		// Initial blankButton
-		borderButton = new Button("Add Border");
+		borderButton = new Button("新增邊界");
+		borderButton.setFont(new Font( "Arial" , Font.BOLD , 40 ));
 		if (showControls) {
 			main.add(borderButton);
 		}
 		borderButton.addActionListener(this);
 		
+		// Initial view3DButton
+		view3dButton = new Button(" 3D視角  ");
+		view3dButton.setFont(new Font( "Arial" , Font.BOLD , 40 ));
+		view3dButton.setPreferredSize(new Dimension(178, 50));
+		if (showControls) {
+			main.add(view3dButton);
+		}
+		view3dButton.addActionListener(this);
+		
 		// Initial stoppedCheck
-		stoppedCheck = new Checkbox("Stopped");
+		stoppedCheck = new Checkbox("暫停");
+		stoppedCheck.setFont(new Font( "Arial" , Font.BOLD , 40 ));
 		stoppedCheck.addItemListener(this);
 		if (showControls) {
-			main.add(stoppedCheck);
+//			main.add(stoppedCheck);
 		}
 		
 		// Initial stoppedCheck		
-		fixedEndsCheck = new Checkbox("Fixed Edges", true);
+		fixedEndsCheck = new Checkbox("固定波緣", true);
+		fixedEndsCheck.setFont(new Font( "Arial" , Font.BOLD , 40 ));
 		fixedEndsCheck.addItemListener(this);
 		if (showControls) {
-			main.add(fixedEndsCheck);
-		}
-
-		// Initial view3dCheck
-		view3dCheck = new Checkbox("3-D View");
-		view3dCheck.addItemListener(this);
-		if (showControls) {
-			main.add(view3dCheck);
+//			main.add(fixedEndsCheck);
 		}
 
 		// Initial speedBar
-		Label l = new Label("Simulation Speed", Label.CENTER);
+		Label l = new Label("模擬速度", Label.CENTER);
+		l.setFont(new Font( "Arial" , Font.BOLD , 40 ));
 		speedBar = new Scrollbar(Scrollbar.HORIZONTAL, 8, 1, 1, 100); // Default: 8/100
 		speedBar.addAdjustmentListener(this);
 		if (showControls) {
-			main.add(l);
-			main.add(speedBar);
+//			main.add(l);
+//			main.add(speedBar);
 		}
 
 		// Initial resBar
-		l = new Label("Resolution", Label.CENTER);
+		l = new Label("解析度", Label.CENTER);
+		l.setFont(new Font( "Arial" , Font.BOLD , 40 ));
 		resBar = new Scrollbar(Scrollbar.HORIZONTAL, 110, 5, 5, 400); // Default: 110/400
 		resBar.addAdjustmentListener(this);
 		if (showControls) {
-			main.add(l);
-			main.add(resBar);
+//			main.add(l);
+//			main.add(resBar);
 		}
 		setResolution();
 
 		// Initial freqBar
-		l = new Label("Source Frequency", Label.CENTER);
+		l = new Label("水波頻率", Label.CENTER);
+		l.setFont(new Font( "Arial" , Font.BOLD , 40 ));
 		freqBar = new Scrollbar(Scrollbar.HORIZONTAL, freqBarValue = 15, 1, 1, 30); // Default: 15/30
 		freqBar.addAdjustmentListener(this);
 		if (showControls) {
@@ -459,7 +455,8 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		}
 
 		// Initial brightnessBar
-		l = new Label("Brightness", Label.CENTER);
+		l = new Label("對比色差", Label.CENTER);
+		l.setFont(new Font( "Arial" , Font.BOLD , 40 ));
 		brightnessBar = new Scrollbar(Scrollbar.HORIZONTAL, 27, 1, 1, 1200); // Default: 27/1200
 		brightnessBar.addAdjustmentListener(this);
 		if (showControls) {
@@ -497,12 +494,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 				}
 			}
 			
-			for (i = 0; i != 20; i++) {
-				param = applet.getParameter("colorScheme" + (i + 1));
-				if (param == null)
-					break;
-				decodeColorScheme(i, param);
-			}
 		} catch (Exception e) {
 			if (applet != null)
 				e.printStackTrace();
@@ -511,8 +502,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 			addDefaultColorScheme();
 		}
 		doColor();
-//		random = new Random();
-		setDamping();
 		setup = (Setup) setupList.elementAt(setupChooser.getSelectedIndex());
 		reinit();
 		cv.setBackground(Color.black);
@@ -616,19 +605,15 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	}
 
 	void destroyFrame() {
-		if (applet == null)
+		if (applet == null) {
 			dispose();
-		else
+		} else {
 			applet.destroyFrame();
+		}
 	}
 
 	void doBlank() {
 		int x, y;
-		// I set all the elements in the grid to 1e-10 instead of 0 because
-		// if I set them to zero, then the simulation slows down for a
-		// short time until the grid fills up again. Don't ask me why!
-		// I don't know. This showed up when I started using floats
-		// instead of doubles.
 		for (x = 0; x != gridSizeXY; x++)
 			func[x] = funci[x] = 1e-10f;
 	}
@@ -653,6 +638,10 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		}
 		calcExceptions();
 	}
+	
+	void do3dView() {
+		is3dView = !is3dView;
+	}
 
 	void setWall(int x, int y) {
 		walls[x + gw * y] = true;
@@ -674,51 +663,39 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 
 	void calcExceptions() {
 		int x, y;
-		// if walls are in place on border, need to extend that through
-		// hidden area to avoid "leaks"
-		for (x = 0; x != gridSizeX; x++)
+		// if walls are in place on border, need to extend that through hidden area to avoid "leaks"
+		for (x = 0; x != gridSizeX; x++) {
 			for (y = 0; y < windowOffsetY; y++) {
 				walls[x + gw * y] = walls[x + gw * windowOffsetY];
 				walls[x + gw * (gridSizeY - y - 1)] = walls[x + gw * (gridSizeY - windowOffsetY - 1)];
 			}
-		for (y = 0; y < gridSizeY; y++)
+		}
+		for (y = 0; y < gridSizeY; y++) {
 			for (x = 0; x < windowOffsetX; x++) {
 				walls[x + gw * y] = walls[windowOffsetX + gw * y];
 				walls[gridSizeX - x - 1 + gw * y] = walls[gridSizeX - windowOffsetX - 1 + gw * y];
 			}
-		// generate exceptional array, which is useful for doing
-		// special handling of elements
-		for (x = 1; x < gridSizeX - 1; x++)
+		}
+		// generate exceptional array, which is useful for doing special handling of elements
+		for (x = 1; x < gridSizeX - 1; x++) {
 			for (y = 1; y < gridSizeY - 1; y++) {
 				int gi = x + gw * y;
 				exceptional[gi] = walls[gi - 1] || walls[gi + 1] || walls[gi - gw] || walls[gi + gw] || walls[gi];
 			}
-		// put some extra exceptions at the corners to ensure tadd2, sinth,
-		// etc get calculated
+		}
+		// put some extra exceptions at the corners to ensure tadd2, sinth and etc to get calculated
 		exceptional[1 + gw] = exceptional[gridSizeX - 2 + gw] = exceptional[1 + (gridSizeY - 2) * gw] = exceptional[gridSizeX - 2 + (gridSizeY - 2) * gw] = true;
 	}
 
-	void centerString(Graphics g, String s, int y) {
-		FontMetrics fm = g.getFontMetrics();
-		g.drawString(s, (winSize.width - fm.stringWidth(s)) / 2, y);
-	}
-
-	public void paint(Graphics g) {
-		cv.repaint();
-	}
-
-	long lastTime = 0, lastFrameTime, secTime = 0;
 	int frames = 0;
 	int steps = 0;
-	int framerate = 0, steprate = 0;
 
 	boolean moveRight = true;
 	boolean moveDown = true;
 
 	public void updateRipple(Graphics realg) {
 		if (winSize == null || winSize.width == 0) {
-			// this works around some weird bug in IE which causes the
-			// applet to not show up properly sometimes.
+			// this works around some weird bug in IE which causes the applet to not show up properly sometimes.
 			handleResize();
 			return;
 		}
@@ -737,25 +714,19 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 			tadd = val * .05;
 		}
 
-		boolean stopFunc = dragging && selectedSource == -1 && view3dCheck.getState() == false && modeChooser.getSelectedIndex() == MODE_SETFUNC;
+		boolean stopFunc = dragging && selectedSource == -1 && is3dView == false && modeChooser.getSelectedIndex() == MODE_SETFUNC;
 		if (stoppedCheck.getState())
 			stopFunc = true;
 		
 		int iterCount = speedBar.getValue();
 		if (!stopFunc) {
-			/*
-			 * long sysTime = System.currentTimeMillis(); if (sysTime-secTime >=
-			 * 1000) { framerate = frames; steprate = steps; frames = 0; steps =
-			 * 0; secTime = sysTime; } lastTime = sysTime;
-			 */
 			int iter;
 			int mxx = gridSizeX - 1;
 			int mxy = gridSizeY - 1;
 			for (iter = 0; iter != iterCount; iter++) {
 				int jstart, jend, jinc;
 				if (moveDown) {
-					// we process the rows in alternate directions
-					// each time to avoid any directional bias.
+					// we process the rows in alternate directions each time to avoid any directional bias.
 					jstart = 1;
 					jend = mxy;
 					jinc = 1;
@@ -786,8 +757,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 					int gi = j * gw + istart;
 					int giEnd = j * gw + iend;
 					for (; gi != giEnd; gi += iinc) {
-						// calculate equilibrum point of this
-						// element's oscillation
+						// calculate equilibrum point of this element's oscillation
 						float previ = func[gi - 1];
 						float nexti = func[gi + 1];
 						float prevj = func[gi - gw];
@@ -801,7 +771,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 							
 							if (walls[gi])
 								continue;
-							int count = 4;
 							if (fixedEndsCheck.getState()) {
 								if (walls[gi - 1])
 									previ = 0;
@@ -922,7 +891,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		}
 
 		brightMult = Math.exp(brightnessBar.getValue() / 100. - 5.);
-		if (view3dCheck.getState())
+		if (is3dView)
 			draw3dView();
 		else
 			draw2dView();
@@ -931,7 +900,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 			imageSource.newPixels();
 
 		realg.drawImage(dbimage, 0, 0, this);
-		if (dragStartX >= 0 && !view3dCheck.getState()) {
+		if (dragStartX >= 0 && !is3dView) {
 			int x = dragStartX * windowWidth / winSize.width;
 			int y = windowHeight - 1 - (dragStartY * windowHeight / winSize.height);
 			String s = "(" + x + "," + y + ")";
@@ -943,17 +912,9 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 			realg.drawString(s, 5, winSize.height - 5);
 		}
 
-		/*
-		 * frames++; realg.setColor(Color.white); realg.drawString("Framerate: "
-		 * + framerate, 10, 10); realg.drawString("Steprate: " + steprate, 10,
-		 * 30); lastFrameTime = lastTime;
-		 */
-
 		if (!stoppedCheck.getState()) {
 			long diff = getTimeMillis() - sysTime;
-			// we want the time it takes for a wave to travel across the screen
-			// to be more-or-less constant, but don't do anything after 5
-			// seconds
+			// we want the time it takes for a wave to travel across the screen to be more-or-less constant, but don't do anything after 5 seconds
 			if (adjustResolution && diff > 0 && sysTime < startTime + 1000 && windowOffsetX * diff / iterCount < 55) {
 				increaseResolution = true;
 				startTime = sysTime;
@@ -1089,12 +1050,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	final double viewDistance = 66;
 
 	void map3d(double x, double y, double z, int xpoints[], int ypoints[], int pt) {
-		/*
-		 * x *= aspectRatio; z *= -4; x *= 16./sampleCount; y *=
-		 * 16./sampleCount; double realx = x*viewAngleCos + y*viewAngleSin; //
-		 * range: [-10,10] double realy = z-viewHeight; double realz =
-		 * y*viewAngleCos - x*viewAngleSin + viewDistance;
-		 */
 		double realx = realxmx * x + realxmy * y;
 		double realy = realymz * z + realymadd;
 		double realz = realzmx * x + realzmy * y + realzmadd;
@@ -1108,10 +1063,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		scalex = viewZoom * (winSize.width / 4) * viewDistance / 8;
 		scaley = -scalex;
 		int y = (int) (scaley * viewHeight / viewDistance);
-		/*
-		 * centerX3d = winSize.x + winSize.width/2; centerY3d = winSize.y +
-		 * winSize.height/2 - y;
-		 */
+
 		centerX3d = winSize.width / 2;
 		centerY3d = winSize.height / 2 - y;
 		scaleMult = 16. / (windowWidth / 2);
@@ -1132,8 +1084,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		int ydir, ystart, yend;
 		int sc = windowRight - 1;
 
-		// figure out what order to render the grid elements so that
-		// the ones in front are rendered first.
+		// figure out what order to render the grid elements so that the ones in front are rendered first.
 		if (viewAngleCos > 0) {
 			ystart = sc;
 			yend = windowOffsetY - 1;
@@ -1156,10 +1107,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 
 		for (x = 0; x != winSize.width * winSize.height; x++)
 			pixels[x] = 0xFF000000;
-		/*
-		 * double zval = 2.0/sampleCount; System.out.println(zval); if
-		 * (sampleCount == 128) zval = .1;
-		 */
+
 		double zval = .1;
 		double zval2 = zval * zval;
 
@@ -1211,7 +1159,8 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		int ri = (int) ((c * redness + gray * grayness) * 255);
 		int gi = (int) ((c * grnness + gray * grayness) * 255);
 		int bi = (int) ((gray * grayness) * 255);
-		return 0xFF000000 | (ri << 16) | (gi << 8) | bi;
+//		return 0xFF000000 | (ri << 16) | (gi << 8) | bi;
+		return 0xFF000000 | ri | gi | bi;
 	}
 
 	void fillTriangle(int x1, int y1, int x2, int y2, int x3, int y3, int col) {
@@ -1323,19 +1272,12 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 				y2 = gridSizeY - 1;
 		}
 
-		/*
-		 * double phase = 0; if (sourceChooser.getSelectedIndex() ==
-		 * SRC_1S1F_PLANE_PHASE) phase =
-		 * (auxBar.getValue()-15)*3.8*freqBar.getValue()*freqMult;
-		 */
-
 		// need to draw a line from x1,y1 to x2,y2
 		if (x1 == x2 && y1 == y2) {
 			func[x1 + gw * y1] = v;
 			funci[x1 + gw * y1] = 0;
 		} else if (abs(y2 - y1) > abs(x2 - x1)) {
-			// y difference is greater, so we step along y's
-			// from min to max y and calculate x for each step
+			// y difference is greater, so we step along y's from min to max y and calculate x for each step
 			double sgn = sign(y2 - y1);
 			int x, y;
 			for (y = y1; y != y2 + sgn; y += sgn) {
@@ -1343,13 +1285,10 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 				double ph = sgn * (y - y1) / (y2 - y1);
 				int gi = x + gw * y;
 				func[gi] = setup.calcSourcePhase(ph, v, w);
-				// (phase == 0) ? v :
-				// (float) (Math.sin(w+ph));
 				funci[gi] = 0;
 			}
 		} else {
-			// x difference is greater, so we step along x's
-			// from min to max x and calculate y for each step
+			// x difference is greater, so we step along x's from min to max x and calculate y for each step
 			double sgn = sign(x2 - x1);
 			int x, y;
 			for (x = x1; x != x2 + sgn; x += sgn) {
@@ -1357,8 +1296,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 				double ph = sgn * (x - x1) / (x2 - x1);
 				int gi = x + gw * y;
 				func[gi] = setup.calcSourcePhase(ph, v, w);
-				// (phase == 0) ? v :
-				// (float) (Math.sin(w+ph));
 				funci[gi] = 0;
 			}
 		}
@@ -1369,7 +1306,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	}
 
 	void edit(MouseEvent e) {
-		if (view3dCheck.getState())
+		if (is3dView)
 			return;
 		int x = e.getX();
 		int y = e.getY();
@@ -1388,8 +1325,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 			// need to draw a line from old x,y to new x,y and
 			// call editFuncPoint for each point on that line. yuck.
 			if (abs(y - dragY) > abs(x - dragX)) {
-				// y difference is greater, so we step along y's
-				// from min to max y and calculate x for each step
+				// y difference is greater, so we step along y's from min to max y and calculate x for each step
 				int x1 = (y < dragY) ? x : dragX;
 				int y1 = (y < dragY) ? y : dragY;
 				int x2 = (y > dragY) ? x : dragX;
@@ -1401,8 +1337,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 					editFuncPoint(x, y);
 				}
 			} else {
-				// x difference is greater, so we step along x's
-				// from min to max x and calculate y for each step
+				// x difference is greater, so we step along x's from min to max x and calculate y for each step
 				int x1 = (x < dragX) ? x : dragX;
 				int y1 = (x < dragX) ? y : dragY;
 				int x2 = (x > dragX) ? x : dragX;
@@ -1457,14 +1392,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		selectedSource = -1;
 	}
 
-	void setDamping() {
-		/*
-		 * int i; double damper = dampingBar.getValue() * .00002;// was 5
-		 * dampcoef = Math.exp(-damper);
-		 */
-		dampcoef = 1;
-	}
-
 	public void componentHidden(ComponentEvent e) {
 	}
 
@@ -1493,6 +1420,10 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 			doBorder();
 			cv.repaint();
 		}
+		if (e.getSource() == view3dButton) {
+			do3dView();
+			cv.repaint();
+		}
 	}
 
 	public void adjustmentValueChanged(AdjustmentEvent e) {
@@ -1514,8 +1445,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	}
 
 	void setFreq() {
-		// adjust time zero to maintain continuity in the freq func
-		// even though the frequency has changed.
+		// adjust time zero to maintain continuity in the freq func even though the frequency has changed.
 		double oldfreq = freqBarValue * freqMult;
 		freqBarValue = freqBar.getValue();
 		double newfreq = freqBarValue * freqMult;
@@ -1542,11 +1472,12 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	}
 
 	public void mouseDragged(MouseEvent e) {
-		if (view3dCheck.getState()) {
+		if (is3dView) {
 			view3dDrag(e);
 		}
-		if (!dragging)
+		if (!dragging) {
 			selectSource(e);
+		}
 		dragging = true;
 		edit(e);
 		adjustResolution = false;
@@ -1579,10 +1510,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		viewAngleSin = Math.sin(viewAngle);
 		viewHeight = (dragStartY - y) / 10. + viewHeightDragStart;
 
-		/*
-		 * viewZoom = (y-dragStartY)/40. + viewZoomDragStart; if (viewZoom < .1)
-		 * viewZoom = .1; System.out.println(viewZoom);
-		 */
 		cv.repaint();
 	}
 
@@ -1619,13 +1546,16 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 			return;
 		}
 		if (e.getItemSelectable() == sourceChooser) {
-			if (sourceChooser.getSelectedIndex() != sourceIndex)
+			if (sourceChooser.getSelectedIndex() != sourceIndex) {
 				setSources();
+			}
 		}
-		if (e.getItemSelectable() == setupChooser)
+		if (e.getItemSelectable() == setupChooser) {
 			doSetup();
-		if (e.getItemSelectable() == colorChooser)
+		}
+		if (e.getItemSelectable() == colorChooser) {
 			doColor();
+		}
 	}
 
 	void doSetup() {
@@ -1645,8 +1575,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		setup.select();
 		setup.doSetupSources();
 		calcExceptions();
-		setDamping();
-		// System.out.println("setup " + setupChooser.getSelectedIndex());
 	}
 
 	void setBrightness(int x) {
@@ -1665,25 +1593,19 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	}
 
 	void addDefaultColorScheme() {
-		
-//		String schemes[] = { "#000000 #0029A3 #335CD6 #0033CC #CC0000", 
-//				"#800000 #ffffff #000000 #808080 #CC0000" };
-		String schemes[] = { "#000000 #0033CC #335CD6 #0029A3 #CC0000", 
-				"#800000 #808080 #000000 #ffffff #CC0000" };
-		int i;
 
-		for (i = 0; i != 2; i++)
-			decodeColorScheme(i, schemes[i]);
+		decodeColorScheme(0, "#000000 #0033CC #335CD6 #0029A3 #CC0000", "水波藍");
+		decodeColorScheme(1, "#800000 #ffffff #000000 #808080 #CC0000", "黑白色");
 	}
 
-	void decodeColorScheme(int cn, String s) {
+	void decodeColorScheme(int cn, String s, String name) {
 		StringTokenizer st = new StringTokenizer(s);
 		while (st.hasMoreTokens()) {
 			int i;
 			for (i = 0; i != 5; i++)
 				schemeColors[cn][i] = Color.decode(st.nextToken());
 		}
-		colorChooser.add("Color Scheme " + (cn + 1));
+		colorChooser.add(name);
 	}
 
 	void setSources() {
@@ -1720,7 +1642,8 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		if (sourceMoving) {
 			auxFunction = AUX_SPEED;
 			auxBar.setValue(7);
-			auxLabel.setText("Source Speed");
+			auxLabel.setText("移動速度");
+			auxLabel.setFont(new Font( "Arial" , Font.BOLD , 40 ));
 		}  else {
 			auxFunction = AUX_NONE;
 			auxBar.hide();
@@ -1800,7 +1723,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 
 	class SingleSourceSetup extends Setup {
 		String getName() {
-			return "Single Source";
+			return "1點波源";
 		}
 
 		void select() {
@@ -1814,7 +1737,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 
 	class DoubleSourceSetup extends Setup {
 		String getName() {
-			return "Two Sources";
+			return "2點波源";
 		}
 
 		void select() {
@@ -1836,7 +1759,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 
 	class QuadrupleSourceSetup extends Setup {
 		String getName() {
-			return "Four Sources";
+			return "4點波源";
 		}
 
 		void select() {
@@ -1855,7 +1778,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 
 	class PlaneWaveSetup extends Setup {
 		String getName() {
-			return "Plane Wave";
+			return "1線波源";
 		}
 
 		void select() {
@@ -1874,7 +1797,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 
 	class IntersectingPlaneWavesSetup extends Setup {
 		String getName() {
-			return "Intersecting Planes";
+			return "交錯線波源";
 		}
 
 		void select() {
@@ -1898,7 +1821,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 
 	class DopplerSetup extends Setup {
 		String getName() {
-			return "Doppler Effect 1";
+			return "都普勒效應";
 		}
 
 		void select() {
