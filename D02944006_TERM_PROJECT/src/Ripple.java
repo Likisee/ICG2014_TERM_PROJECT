@@ -204,7 +204,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		
 	Scrollbar speedBar;
 	Scrollbar resBar;
-	Scrollbar dampingBar;
 	Scrollbar freqBar;
 	Scrollbar brightnessBar;
 	Scrollbar auxBar;
@@ -212,8 +211,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	static final double pi = 3.14159265358979323846;
 	public static final int sourceRadius = 5;
 	public static final double freqMult = .0233333;
-	static final int mediumMax = 191;
-	static final double mediumMaxIndex = .5;
 	
 	static final int SWF_SIN = 0;
 	static final int SWF_SQUARE = 1;
@@ -234,14 +231,11 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	
 	static final int MODE_SETFUNC = 0;
 	static final int MODE_WALLS = 1;
-	static final int MODE_MEDIUM = 2;
-	static final int MODE_FUNCHOLD = 3;
 	
 	float func[];
 	float funci[];
 	OscSource sources[];
 	boolean walls[];
-	int medium[];
 	float damp[];
 	boolean exceptional[];
 	
@@ -380,8 +374,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		modeChooser = new Choice();
 		modeChooser.add("Mouse = Edit Wave");
 		modeChooser.add("Mouse = Edit Walls");
-		modeChooser.add("Mouse = Edit Medium");
-		modeChooser.add("Mouse = Hold Wave");
 		modeChooser.addItemListener(this);
 		if (showControls) {
 			main.add(modeChooser);
@@ -456,15 +448,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 			main.add(resBar);
 		}
 		setResolution();
-
-		// Initial dampingBar
-		l = new Label("Damping", Label.CENTER);
-		dampingBar = new Scrollbar(Scrollbar.HORIZONTAL, 10, 1, 2, 100); // Default: 10/100
-		dampingBar.addAdjustmentListener(this);
-		if (showControls) {
-			main.add(l);
-			main.add(dampingBar);
-		}
 
 		// Initial freqBar
 		l = new Label("Source Frequency", Label.CENTER);
@@ -563,7 +546,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		func = new float[gridSizeXY];
 		funci = new float[gridSizeXY];
 		walls = new boolean[gridSizeXY];
-		medium = new int[gridSizeXY];
 		damp = new float[gridSizeXY];
 		exceptional = new boolean[gridSizeXY];
 		int i, j;
@@ -655,7 +637,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		int x, y;
 		for (x = 0; x != gridSizeXY; x++) {
 			walls[x] = false;
-			medium[x] = 0;
 		}
 		calcExceptions();
 	}
@@ -679,10 +660,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 
 	void setWall(int x, int y, boolean b) {
 		walls[x + gw * y] = b;
-	}
-
-	void setMedium(int x, int y, int q) {
-		medium[x + gw * y] = q;
 	}
 
 	long getTimeMillis() {
@@ -714,9 +691,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		for (x = 1; x < gridSizeX - 1; x++)
 			for (y = 1; y < gridSizeY - 1; y++) {
 				int gi = x + gw * y;
-				exceptional[gi] = walls[gi - 1] || walls[gi + 1] || walls[gi - gw] || walls[gi + gw] || walls[gi] || medium[gi] != medium[gi - 1] || medium[gi] != medium[gi + 1];
-				if ((x == 1 || x == gridSizeX - 2) && medium[gi] != medium[gridSizeX - 1 - x + gw * (y + 1)] || medium[gi] != medium[gridSizeX - 1 - x + gw * (y - 1)])
-					exceptional[gi] = true;
+				exceptional[gi] = walls[gi - 1] || walls[gi + 1] || walls[gi - gw] || walls[gi + gw] || walls[gi];
 			}
 		// put some extra exceptions at the corners to ensure tadd2, sinth,
 		// etc get calculated
@@ -795,7 +770,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 				float sinhalfth = 0;
 				float sinth = 0;
 				float scaleo = 0;
-				int curMedium = -1;
 				for (int j = jstart; j != jend; j += jinc) {
 					int istart, iend, iinc;
 					if (moveRight) {
@@ -820,13 +794,11 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 						float nextj = func[gi + gw];
 						float basis = (nexti + previ + nextj + prevj) * .25f;
 						if (exceptional[gi]) {
-							if (curMedium != medium[gi]) {
-								curMedium = medium[gi];
-								double tadd2 = tadd * (1 - (mediumMaxIndex / mediumMax) * curMedium);
-								sinhalfth = (float) Math.sin(tadd2 / 2);
-								sinth = (float) (Math.sin(tadd2) * dampcoef);
-								scaleo = (float) (1 - Math.sqrt(4 * sinhalfth * sinhalfth - sinth * sinth));
-							}
+
+							sinhalfth = (float) Math.sin(tadd / 2);
+							sinth = (float) (Math.sin(tadd) * dampcoef);
+							scaleo = (float) (1 - Math.sqrt(4 * sinhalfth * sinhalfth - sinth * sinth));
+							
 							if (walls[gi])
 								continue;
 							int count = 4;
@@ -986,8 +958,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 				increaseResolution = true;
 				startTime = sysTime;
 			}
-			if (dragging && selectedSource == -1 && modeChooser.getSelectedIndex() == MODE_FUNCHOLD)
-				editFuncPoint(dragX, dragY);
 			cv.repaint(0);
 		}
 	}
@@ -1083,23 +1053,15 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 				else if (dy < 0) {
 					double d1 = -dy;
 					double d2 = 1 - d1;
-					double d3 = medium[gi] * (1 / 255.01);
-					double d4 = 1 - d3;
-					double a1 = d1 * d4;
-					double a2 = d2 * d4;
-					colR = (int) (negColor.getRed() * a1 + zeroColor.getRed() * a2);
-					colG = (int) (negColor.getGreen() * a1 + zeroColor.getGreen() * a2);
-					colB = (int) (negColor.getBlue() * a1 + zeroColor.getBlue() * a2);
+					colR = (int) (negColor.getRed() * d1 + zeroColor.getRed() * d2);
+					colG = (int) (negColor.getGreen() * d1 + zeroColor.getGreen() * d2);
+					colB = (int) (negColor.getBlue() * d1 + zeroColor.getBlue() * d2);
 				} else {
 					double d1 = dy;
 					double d2 = 1 - dy;
-					double d3 = medium[gi] * (1 / 255.01);
-					double d4 = 1 - d3;
-					double a1 = d1 * d4;
-					double a2 = d2 * d4;
-					colR = (int) (posColor.getRed() * a1 + zeroColor.getRed() * a2);
-					colG = (int) (posColor.getGreen() * a1 + zeroColor.getGreen() * a2);
-					colB = (int) (posColor.getBlue() * a1 + zeroColor.getBlue() * a2);	
+					colR = (int) (posColor.getRed() * d1 + zeroColor.getRed() * d2);
+					colG = (int) (posColor.getGreen() * d1 + zeroColor.getGreen() * d2);
+					colB = (int) (posColor.getBlue() * d1 + zeroColor.getBlue() * d2);
 				}
 				col = (255 << 24) | (colR << 16) | (colG << 8) | (colB);
 				for (k = 0; k != x2 - x; k++, ix++)
@@ -1245,14 +1207,9 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		if (redness < 0)
 			redness = 0;
 		double grayness = (1 - (redness + grnness)) * c;
-		double grayness2 = grayness;
-		if (medium[gix] > 0) {
-			double mm = 1 - (medium[gix] * (1 / 255.01));
-			grayness2 *= mm;
-		}
 		double gray = .6;
-		int ri = (int) ((c * redness + gray * grayness2) * 255);
-		int gi = (int) ((c * grnness + gray * grayness2) * 255);
+		int ri = (int) ((c * redness + gray * grayness) * 255);
+		int gi = (int) ((c * grnness + gray * grayness) * 255);
 		int bi = (int) ((gray * grayness) * 255);
 		return 0xFF000000 | (ri << 16) | (gi << 8) | bi;
 	}
@@ -1472,13 +1429,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 			walls[gi] = dragSet;
 			calcExceptions();
 			func[gi] = funci[gi] = 0;
-		} else if (modeChooser.getSelectedIndex() == MODE_MEDIUM) {
-			if (!dragSet && !dragClear) {
-				dragClear = medium[gi] > 0;
-				dragSet = !dragClear;
-			}
-			medium[gi] = (dragSet) ? mediumMax : 0;
-			calcExceptions();
 		} else {
 			if (!dragSet && !dragClear) {
 				dragClear = func[gi] > .1;
@@ -1551,8 +1501,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 			setResolution();
 			reinit();
 		}
-		if (e.getSource() == dampingBar)
-			setDamping();
 		if (e.getSource() == brightnessBar)
 			cv.repaint(0);
 		if (e.getSource() == freqBar)
@@ -1689,9 +1637,8 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		// don't use previous source positions, use defaults
 		sourceCount = -1;
 		sourceChooser.select(SRC_1S1F);
-		dampingBar.setValue(10);
 		setFreqBar(5);
-		setBrightness(10);
+		setBrightness(15);
 		auxBar.setValue(1);
 		fixedEndsCheck.setState(true);
 		setup = (Setup) setupList.elementAt(setupChooser.getSelectedIndex());
@@ -1719,8 +1666,10 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 
 	void addDefaultColorScheme() {
 		
-		String schemes[] = { "#000000 #0029A3 #335CD6 #0033CC #CC0000", 
-				"#800000 #ffffff #000000 #808080 #CC0000" };
+//		String schemes[] = { "#000000 #0029A3 #335CD6 #0033CC #CC0000", 
+//				"#800000 #ffffff #000000 #808080 #CC0000" };
+		String schemes[] = { "#000000 #0033CC #335CD6 #0029A3 #CC0000", 
+				"#800000 #808080 #000000 #ffffff #CC0000" };
 		int i;
 
 		for (i = 0; i != 2; i++)
@@ -1735,13 +1684,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 				schemeColors[cn][i] = Color.decode(st.nextToken());
 		}
 		colorChooser.add("Color Scheme " + (cn + 1));
-	}
-
-	void addMedium() {
-		int i, j;
-		for (i = 0; i != gridSizeX; i++)
-			for (j = gridSizeY / 2; j != gridSizeY; j++)
-				medium[i + j * gw] = mediumMax;
 	}
 
 	void setSources() {
