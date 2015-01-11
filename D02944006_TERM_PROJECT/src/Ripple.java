@@ -49,32 +49,39 @@ class RippleLayout implements LayoutManager {
 
 	public void layoutContainer(Container target) {
 		Insets insets = target.insets();
-		int targetw = target.size().width - insets.left - insets.right;
+		
+		// targetw, targeth -> getComponent(0)
+		int targetw = target.size().width - (insets.left + insets.right);
 		int cw = targetw * 7 / 10;
-		if (target.getComponentCount() == 1)
+		if (target.getComponentCount() == 1) {
 			cw = targetw;
+		}
 		int targeth = target.size().height - (insets.top + insets.bottom);
 		target.getComponent(0).move(insets.left, insets.top);
 		target.getComponent(0).resize(cw, targeth);
-		int barwidth = targetw - cw;
-		cw += insets.left;
+		
+		// barwidth -> the rest of the getComponent(>0)
+		int barwidth = targetw - cw; // (ratio: 3 / 10)
+		cw = cw + insets.left;
 		int i;
 		int h = insets.top;
-		for (i = 1; i < target.getComponentCount(); i++) {
+		for (i = 1; i < target.getComponentCount(); i++) { // TODO For each Component
 			Component m = target.getComponent(i);
 			if (m.isVisible()) {
 				Dimension d = m.getPreferredSize();
-				if (m instanceof Scrollbar)
+				if (m instanceof Scrollbar) {
 					d.width = barwidth;
-				if (m instanceof Choice && d.width > barwidth)
+				}
+				if (m instanceof Choice && d.width > barwidth) {
 					d.width = barwidth;
+				}
 				if (m instanceof Label) {
 					h += d.height / 5;
 					d.width = barwidth;
 				}
 				m.move(cw, h);
 				m.resize(d.width, d.height);
-				h += d.height;
+				h = h + d.height;
 			}
 		}
 	}
@@ -84,8 +91,9 @@ public class Ripple extends Applet implements ComponentListener {
 	static RippleFrame ogf;
 
 	void destroyFrame() {
-		if (ogf != null)
+		if (ogf != null) {
 			ogf.dispose();
+		}
 		ogf = null;
 		repaint();
 	}
@@ -112,12 +120,13 @@ public class Ripple extends Applet implements ComponentListener {
 
 	public void paint(Graphics g) {
 		String s = "Applet is open in a separate window.";
-		if (!started)
+		if (!started) {
 			s = "Applet is starting.";
-		else if (ogf == null)
+		} else if (ogf == null) {
 			s = "Applet is finished.";
-		else if (ogf.useFrame)
+		} else if (ogf.useFrame) {
 			ogf.triggerShow();
+		}
 		g.drawString(s, 10, 30);
 	}
 
@@ -135,8 +144,9 @@ public class Ripple extends Applet implements ComponentListener {
 	}
 
 	public void destroy() {
-		if (ogf != null)
+		if (ogf != null) {
 			ogf.dispose();
+		}
 		ogf = null;
 		repaint();
 	}
@@ -176,81 +186,45 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	int windowOffsetY = 0;
 	int windowBottom = 0;
 	int windowRight = 0;
-	public static final int sourceRadius = 7;
-	public static final double freqMult = .0233333;
-
+	
 	Container main;
+
+	Choice setupChooser;
+	Choice sourceChooser;
+	Choice modeChooser;
+	Choice colorChooser;
+	
 	Button blankButton;
 	Button blankWallsButton;
 	Button borderButton;
-	Button exportButton;
+//	Button exportButton;
+	
 	Checkbox stoppedCheck;
 	Checkbox fixedEndsCheck;
 	Checkbox view3dCheck;
-	Choice modeChooser;
-	Choice sourceChooser;
-	Choice setupChooser;
-	Choice colorChooser;
-	Vector setupList;
-	Setup setup;
-	Scrollbar dampingBar;
+		
 	Scrollbar speedBar;
-	Scrollbar freqBar;
 	Scrollbar resBar;
+	Scrollbar dampingBar;
+	Scrollbar freqBar;
 	Scrollbar brightnessBar;
 	Scrollbar auxBar;
-	Label auxLabel;
-	double dampcoef;
-	double freqTimeZero;
-	double movingSourcePos = 0;
-	double brightMult = 1;
+	
 	static final double pi = 3.14159265358979323846;
-	float func[];
-	float funci[];
-	float damp[];
-	boolean walls[];
-	boolean exceptional[];
-	int medium[];
-	OscSource sources[];
-	static final int MODE_SETFUNC = 0;
-	static final int MODE_WALLS = 1;
-	static final int MODE_MEDIUM = 2;
-	static final int MODE_FUNCHOLD = 3;
-	int dragX, dragY, dragStartX = -1, dragStartY;
-	int selectedSource = -1;
-	int sourceIndex;
-	int freqBarValue;
-	boolean dragging;
-	boolean dragClear;
-	boolean dragSet;
-	public boolean useFrame;
-	boolean showControls;
-	double t;
-	MemoryImageSource imageSource;
-	int pixels[];
-	int sourceCount = -1;
-	boolean sourcePlane = false;
-	boolean sourceMoving = false;
-	boolean increaseResolution = false;
-	boolean adjustResolution = true;
-	int sourceFreqCount = -1;
-	int sourceWaveform = SWF_SIN;
-	int auxFunction;
-	long startTime;
-	Color wallColor, posColor, negColor, zeroColor, sourceColor;
-	Color schemeColors[][];
-	Method timerMethod;
-	int timerDiv;
-	ImportDialog impDialog;
+	public static final int sourceRadius = 5;
+	public static final double freqMult = .0233333;
 	static final int mediumMax = 191;
 	static final double mediumMaxIndex = .5;
+	
 	static final int SWF_SIN = 0;
 	static final int SWF_SQUARE = 1;
 	static final int SWF_PULSE = 2;
+	
 	static final int AUX_NONE = 0;
 	static final int AUX_PHASE = 1;
 	static final int AUX_FREQ = 2;
 	static final int AUX_SPEED = 3;
+	
 	static final int SRC_NONE = 0;
 	static final int SRC_1S1F = 1;
 	static final int SRC_2S1F = 3;
@@ -268,47 +242,104 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 	static final int SRC_12S1F = 19;
 	static final int SRC_16S1F = 20;
 	static final int SRC_20S1F = 21;
-
-	int getrand(int x) {
-		int q = random.nextInt();
-		if (q < 0)
-			q = -q;
-		return q % x;
-	}
-
+	
+	static final int MODE_SETFUNC = 0;
+	static final int MODE_WALLS = 1;
+	static final int MODE_MEDIUM = 2;
+	static final int MODE_FUNCHOLD = 3;
+	
+	float func[];
+	float funci[];
+	OscSource sources[];
+	boolean walls[];
+	int medium[];
+	float damp[];
+	boolean exceptional[];
+	
+	public boolean useFrame;
+	boolean showControls;
 	boolean useBufferedImage = false;
+	Method timerMethod;
+	int timerDiv;
+	
+	Vector setupList;
+	Setup setup;	
+	
 
+	
+	
+	Label auxLabel;
+	double dampcoef;
+	double freqTimeZero;
+	double movingSourcePos = 0;
+	double brightMult = 1;
+	int dragX, dragY, dragStartX = -1, dragStartY;
+	int selectedSource = -1;
+	int sourceIndex;
+	int freqBarValue;
+	boolean dragging;
+	boolean dragClear;
+	boolean dragSet;
+	double t;
+	MemoryImageSource imageSource;
+	int pixels[];
+	int sourceCount = -1;
+	boolean sourcePlane = false;
+	boolean sourceMoving = false;
+	boolean increaseResolution = false;
+	boolean adjustResolution = true;
+	int sourceFreqCount = -1;
+	int sourceWaveform = SWF_SIN;
+	int auxFunction;
+	long startTime;
+	Color wallColor, posColor, negColor, zeroColor, sourceColor;
+	Color schemeColors[][];
+	
+//	ImportDialog impDialog;
+
+//	int getrand(int x) {
+//		int q = random.nextInt();
+//		if (q < 0) {
+//			q = -q;
+//		}
+//		return q % x;
+//	}
+	
 	public void init() {
+		// useFrame? showControls? main!!
 		try {
 			if (applet != null) {
+				// useFrame: Default true
 				String param = applet.getParameter("useFrame");
-				if (param != null && param.equalsIgnoreCase("false"))
+				if (param != null && param.equalsIgnoreCase("false")) {
 					useFrame = false;
+				}
+				// showControls: Default false
 				param = applet.getParameter("showControls");
-				if (param != null && param.equalsIgnoreCase("false"))
+				if (param != null && param.equalsIgnoreCase("false")) {
 					showControls = false;
+				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		if (useFrame)
+		if (useFrame) {
 			main = this;
-		else
+		} else {
 			main = applet;
-
-		setupList = new Vector();
-		Setup s = new SingleSourceSetup();
-		while (s != null) {
-			setupList.addElement(s);
-			s = s.createNext();
 		}
-		String os = System.getProperty("os.name");
-		int res = 110;
+
+//		int res = 110;
+//		String os = System.getProperty("os.name");
+		
+		// useBufferedImage
 		String jv = System.getProperty("java.class.version");
 		double jvf = new Double(jv).doubleValue();
-		if (jvf >= 48)
+		if (jvf >= 48) { // Java 1.4
 			useBufferedImage = true;
+		}
 
+		// timerMethod & timerDiv (nano vs milli)
 		try {
 			Class sysclass = Class.forName("java.lang.System");
 			timerMethod = sysclass.getMethod("nanoTime", null);
@@ -320,8 +351,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		} catch (Exception ee) {
 			ee.printStackTrace();
 		}
-
-		sources = new OscSource[20];
+		
 		main.setLayout(new RippleLayout());
 		cv = new RippleCanvas(this);
 		cv.addComponentListener(this);
@@ -329,15 +359,26 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		cv.addMouseListener(this);
 		main.add(cv);
 
+		// Initial setupList -> setupChooser
+		setupList = new Vector();
+		Setup s = new SingleSourceSetup(); // Default SingleSourceSetup
+		while (s != null) {
+			setupList.addElement(s);
+			s = s.createNext();
+		}
 		setupChooser = new Choice();
 		int i;
-		for (i = 0; i != setupList.size(); i++)
+		for (i = 0; i != setupList.size(); i++) {
 			setupChooser.add("Setup: " + ((Setup) setupList.elementAt(i)).getName());
+		}
 		setupChooser.addItemListener(this);
-		if (showControls)
+		if (showControls) {
 			main.add(setupChooser);
+		}
 
-		// add(new Label("Source mode:", Label.CENTER));
+		// Initial OscSource & sourceChooser
+//		add(new Label("Source mode:", Label.CENTER));
+		sources = new OscSource[20];
 		sourceChooser = new Choice();
 		sourceChooser.add("No Sources");
 		sourceChooser.add("1 Src, 1 Freq");
@@ -363,100 +404,130 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		sourceChooser.add("20 Src, 1 Freq");
 		sourceChooser.select(SRC_1S1F);
 		sourceChooser.addItemListener(this);
-		if (showControls)
+		if (showControls) {
 			main.add(sourceChooser);
+		}
 
-		// add(new Label("Mouse mode:", Label.CENTER));
+		// Initial modeChooser
+//		add(new Label("Mouse mode:", Label.CENTER));
 		modeChooser = new Choice();
 		modeChooser.add("Mouse = Edit Wave");
 		modeChooser.add("Mouse = Edit Walls");
 		modeChooser.add("Mouse = Edit Medium");
 		modeChooser.add("Mouse = Hold Wave");
 		modeChooser.addItemListener(this);
-		if (showControls)
+		if (showControls) {
 			main.add(modeChooser);
-		else
+		} else {
 			modeChooser.select(1);
+		}
 
+		// Initial colorChooser
 		colorChooser = new Choice();
 		colorChooser.addItemListener(this);
-		if (showControls)
+		if (showControls) {
 			main.add(colorChooser);
+		}
 
+		// Initial blankButton
 		blankButton = new Button("Clear Waves");
-		if (showControls)
+		if (showControls) {
 			main.add(blankButton);
+		}
 		blankButton.addActionListener(this);
+		
+		// Initial blankWallsButton
 		blankWallsButton = new Button("Clear Walls");
-		if (showControls)
+		if (showControls) {
 			main.add(blankWallsButton);
+		}
 		blankWallsButton.addActionListener(this);
+		
+		// Initial blankButton
 		borderButton = new Button("Add Border");
-		if (showControls)
+		if (showControls) {
 			main.add(borderButton);
+		}
 		borderButton.addActionListener(this);
-		exportButton = new Button("Import/Export");
-		if (showControls)
-			main.add(exportButton);
-		exportButton.addActionListener(this);
+		
+		// Initial exportButton
+//		exportButton = new Button("Import/Export");
+//		if (showControls) {
+//			main.add(exportButton);
+//		}
+//		exportButton.addActionListener(this);
+		
+		// Initial stoppedCheck
 		stoppedCheck = new Checkbox("Stopped");
 		stoppedCheck.addItemListener(this);
-		if (showControls)
+		if (showControls) {
 			main.add(stoppedCheck);
+		}
+		
+		// Initial stoppedCheck		
 		fixedEndsCheck = new Checkbox("Fixed Edges", true);
 		fixedEndsCheck.addItemListener(this);
-		if (showControls)
+		if (showControls) {
 			main.add(fixedEndsCheck);
+		}
 
+		// Initial view3dCheck
 		view3dCheck = new Checkbox("3-D View");
 		view3dCheck.addItemListener(this);
-		if (showControls)
+		if (showControls) {
 			main.add(view3dCheck);
+		}
 
+		// Initial speedBar
 		Label l = new Label("Simulation Speed", Label.CENTER);
-		speedBar = new Scrollbar(Scrollbar.HORIZONTAL, 8, 1, 1, 100);
+		speedBar = new Scrollbar(Scrollbar.HORIZONTAL, 8, 1, 1, 100); // Default: 8/100
+		speedBar.addAdjustmentListener(this);
 		if (showControls) {
 			main.add(l);
 			main.add(speedBar);
 		}
 
-		speedBar.addAdjustmentListener(this);
-
+		// Initial resBar
 		l = new Label("Resolution", Label.CENTER);
-		resBar = new Scrollbar(Scrollbar.HORIZONTAL, res, 5, 5, 400);
+//		resBar = new Scrollbar(Scrollbar.HORIZONTAL, res, 5, 5, 400);
+		resBar = new Scrollbar(Scrollbar.HORIZONTAL, 110, 5, 5, 400); // Default: 110/400
+		resBar.addAdjustmentListener(this);
 		if (showControls) {
 			main.add(l);
 			main.add(resBar);
 		}
-		resBar.addAdjustmentListener(this);
 		setResolution();
 
+		// Initial dampingBar
 		l = new Label("Damping", Label.CENTER);
-		dampingBar = new Scrollbar(Scrollbar.HORIZONTAL, 10, 1, 2, 100);
+		dampingBar = new Scrollbar(Scrollbar.HORIZONTAL, 10, 1, 2, 100); // Default: 10/100
 		dampingBar.addAdjustmentListener(this);
 		if (showControls) {
 			main.add(l);
 			main.add(dampingBar);
 		}
 
+		// Initial freqBar
 		l = new Label("Source Frequency", Label.CENTER);
-		freqBar = new Scrollbar(Scrollbar.HORIZONTAL, freqBarValue = 15, 1, 1, 30);
+		freqBar = new Scrollbar(Scrollbar.HORIZONTAL, freqBarValue = 15, 1, 1, 30); // Default: 15/30
 		freqBar.addAdjustmentListener(this);
 		if (showControls) {
 			main.add(l);
 			main.add(freqBar);
 		}
 
+		// Initial brightnessBar
 		l = new Label("Brightness", Label.CENTER);
-		brightnessBar = new Scrollbar(Scrollbar.HORIZONTAL, 27, 1, 1, 1200);
+		brightnessBar = new Scrollbar(Scrollbar.HORIZONTAL, 27, 1, 1, 1200); // Default: 27/1200
 		brightnessBar.addAdjustmentListener(this);
 		if (showControls) {
 			main.add(l);
 			main.add(brightnessBar);
 		}
 
+		// Initial auxBar
 		auxLabel = new Label("", Label.CENTER);
-		auxBar = new Scrollbar(Scrollbar.HORIZONTAL, 1, 1, 1, 30);
+		auxBar = new Scrollbar(Scrollbar.HORIZONTAL, 1, 1, 1, 30); // Default: 1/30
 		auxBar.addAdjustmentListener(this);
 		if (showControls) {
 			main.add(auxLabel);
@@ -470,18 +541,23 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 
 		try {
 			String param;
+			
 			param = applet.getParameter("setup");
-			if (param != null)
+			if (param != null) {
 				setupChooser.select(Integer.parseInt(param));
+			}
+			
 			param = applet.getParameter("setupClass");
 			if (param != null) {
 				for (i = 0; i != setupList.size(); i++) {
 					if (setupList.elementAt(i).getClass().getName().equalsIgnoreCase("RippleFrame$" + param))
 						break;
 				}
-				if (i != setupList.size())
+				if (i != setupList.size()) {
 					setupChooser.select(i);
+				}
 			}
+			
 			for (i = 0; i != 20; i++) {
 				param = applet.getParameter("colorScheme" + (i + 1));
 				if (param == null)
@@ -492,10 +568,11 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 			if (applet != null)
 				e.printStackTrace();
 		}
-		if (colorChooser.getItemCount() == 0)
+		if (colorChooser.getItemCount() == 0) {
 			addDefaultColorScheme();
+		}
 		doColor();
-		random = new Random();
+//		random = new Random();
 		setDamping();
 		setup = (Setup) setupList.elementAt(setupChooser.getSelectedIndex());
 		reinit();
@@ -529,10 +606,10 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		gw = gridSizeY;
 		func = new float[gridSizeXY];
 		funci = new float[gridSizeXY];
+		walls = new boolean[gridSizeXY];
+		medium = new int[gridSizeXY];
 		damp = new float[gridSizeXY];
 		exceptional = new boolean[gridSizeXY];
-		medium = new int[gridSizeXY];
-		walls = new boolean[gridSizeXY];
 		int i, j;
 		for (i = 0; i != gridSizeXY; i++)
 			damp[i] = 1f; // (float) dampcoef;
@@ -1510,8 +1587,8 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 			doBorder();
 			cv.repaint();
 		}
-		if (e.getSource() == exportButton)
-			doImport();
+//		if (e.getSource() == exportButton)
+//			doImport();
 	}
 
 	public void adjustmentValueChanged(AdjustmentEvent e) {
@@ -1852,219 +1929,219 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		}
 	};
 
-	void doImport() {
-		if (impDialog != null) {
-			requestFocus();
-			impDialog.setVisible(false);
-			impDialog = null;
-		}
-		String dump = "";
-
-		int i;
-		dump = "$ 0 " + resBar.getValue() + " " + sourceChooser.getSelectedIndex() + " " + colorChooser.getSelectedIndex() + " " + fixedEndsCheck.getState() + " " + view3dCheck.getState() + " " + speedBar.getValue() + " " + freqBar.getValue() + " " + brightnessBar.getValue() + " " + auxBar.getValue() + "\n";
-		for (i = 0; i != sourceCount; i++) {
-			OscSource src = sources[i];
-			dump += "s " + src.x + " " + src.y + "\n";
-		}
-		for (i = 0; i != gridSizeXY;) {
-			if (i >= gridSizeX) {
-				int istart = i;
-				for (; i < gridSizeXY && walls[i] == walls[i - gridSizeX] && medium[i] == medium[i - gridSizeX]; i++)
-					;
-				if (i > istart) {
-					dump += "l " + (i - istart) + "\n";
-					continue;
-				}
-			}
-			boolean x = walls[i];
-			int m = medium[i];
-			int ct = 0;
-			for (; i < gridSizeXY && walls[i] == x && medium[i] == m; ct++, i++)
-				;
-			dump += (x ? "w " : "c ") + ct + " " + m + "\n";
-		}
-		impDialog = new ImportDialog(this, dump);
-		impDialog.show();
-	}
-
-	void readImport(String s) {
-		byte b[] = s.getBytes();
-		int len = s.length();
-		int p;
-		int x = 0;
-		int srci = 0;
-		setupChooser.select(0);
-		setup = (Setup) setupList.elementAt(0);
-		for (p = 0; p < len;) {
-			int l;
-			int linelen = 0;
-			for (l = 0; l != len - p; l++)
-				if (b[l + p] == '\n' || b[l + p] == '\r') {
-					linelen = l++;
-					if (l + p < b.length && b[l + p] == '\n')
-						l++;
-					break;
-				}
-			String line = new String(b, p, linelen);
-			StringTokenizer st = new StringTokenizer(line);
-			while (st.hasMoreTokens()) {
-				String type = st.nextToken();
-				int tint = type.charAt(0);
-				try {
-					if (tint == '$') {
-						int flags = new Integer(st.nextToken()).intValue();
-
-						resBar.setValue(new Integer(st.nextToken()).intValue());
-						setResolution();
-						reinit(false);
-
-						sourceChooser.select(new Integer(st.nextToken()).intValue());
-						setSources();
-
-						colorChooser.select(new Integer(st.nextToken()).intValue());
-						doColor();
-
-						fixedEndsCheck.setState(st.nextToken().compareTo("true") == 0);
-						view3dCheck.setState(st.nextToken().compareTo("true") == 0);
-						speedBar.setValue(new Integer(st.nextToken()).intValue());
-						freqBar.setValue(new Integer(st.nextToken()).intValue());
-						brightnessBar.setValue(new Integer(st.nextToken()).intValue());
-						auxBar.setValue(new Integer(st.nextToken()).intValue());
-						break;
-					}
-					if (tint == 'w' || tint == 'c') {
-						boolean w = (tint == 'w');
-						int ct = new Integer(st.nextToken()).intValue();
-						int md = new Integer(st.nextToken()).intValue();
-						for (; ct > 0; ct--, x++) {
-							walls[x] = w;
-							medium[x] = md;
-						}
-						break;
-					}
-					if (tint == 'l') {
-						int ct = new Integer(st.nextToken()).intValue();
-						for (; ct > 0; ct--, x++) {
-							walls[x] = walls[x - gridSizeX];
-							medium[x] = medium[x - gridSizeX];
-						}
-						break;
-					}
-					if (tint == 's') {
-						int sx = new Integer(st.nextToken()).intValue();
-						int sy = new Integer(st.nextToken()).intValue();
-						sources[srci].x = sx;
-						sources[srci].y = sy;
-						srci++;
-						break;
-					}
-					System.out.println("unknown type!");
-				} catch (Exception ee) {
-					ee.printStackTrace();
-					break;
-				}
-				break;
-			}
-			p += l;
-
-		}
-		calcExceptions();
-		setDamping();
-	}
-
-	class ImportDialogLayout implements LayoutManager {
-		public ImportDialogLayout() {
-		}
-
-		public void addLayoutComponent(String name, Component c) {
-		}
-
-		public void removeLayoutComponent(Component c) {
-		}
-
-		public Dimension preferredLayoutSize(Container target) {
-			return new Dimension(500, 500);
-		}
-
-		public Dimension minimumLayoutSize(Container target) {
-			return new Dimension(100, 100);
-		}
-
-		public void layoutContainer(Container target) {
-			Insets insets = target.insets();
-			int targetw = target.size().width - insets.left - insets.right;
-			int targeth = target.size().height - (insets.top + insets.bottom);
-			int i;
-			int pw = 300;
-			if (target.getComponentCount() == 0)
-				return;
-			Component cl = target.getComponent(target.getComponentCount() - 1);
-			Dimension dl = cl.getPreferredSize();
-			target.getComponent(0).move(insets.left, insets.top);
-			int cw = target.size().width - insets.left - insets.right;
-			int ch = target.size().height - insets.top - insets.bottom - dl.height;
-			target.getComponent(0).resize(cw, ch);
-			int h = ch + insets.top;
-			int x = 0;
-			for (i = 1; i < target.getComponentCount(); i++) {
-				Component m = target.getComponent(i);
-				if (m.isVisible()) {
-					Dimension d = m.getPreferredSize();
-					m.move(insets.left + x, h);
-					m.resize(d.width, d.height);
-					x += d.width;
-				}
-			}
-		}
-	};
-
-	class ImportDialog extends Dialog implements ActionListener {
-		RippleFrame rframe;
-		Button importButton, clearButton, closeButton;
-		TextArea text;
-
-		ImportDialog(RippleFrame f, String str) {
-			super(f, (str.length() > 0) ? "Export" : "Import", false);
-			rframe = f;
-			setLayout(new ImportDialogLayout());
-			add(text = new TextArea(str, 10, 60, TextArea.SCROLLBARS_BOTH));
-			add(importButton = new Button("Import"));
-			importButton.addActionListener(this);
-			add(clearButton = new Button("Clear"));
-			clearButton.addActionListener(this);
-			add(closeButton = new Button("Close"));
-			closeButton.addActionListener(this);
-			Point x = rframe.getLocationOnScreen();
-			resize(400, 300);
-			Dimension d = getSize();
-			setLocation(x.x + (winSize.width - d.width) / 2, x.y + (winSize.height - d.height) / 2);
-			show();
-			if (str.length() > 0)
-				text.selectAll();
-		}
-
-		public void actionPerformed(ActionEvent e) {
-			int i;
-			Object src = e.getSource();
-			if (src == importButton) {
-				rframe.readImport(text.getText());
-				setVisible(false);
-			}
-			if (src == closeButton)
-				setVisible(false);
-			if (src == clearButton)
-				text.setText("");
-		}
-
-		public boolean handleEvent(Event ev) {
-			if (ev.id == Event.WINDOW_DESTROY) {
-				rframe.requestFocus();
-				setVisible(false);
-				return true;
-			}
-			return super.handleEvent(ev);
-		}
-	}
+//	void doImport() {
+//		if (impDialog != null) {
+//			requestFocus();
+//			impDialog.setVisible(false);
+//			impDialog = null;
+//		}
+//		String dump = "";
+//
+//		int i;
+//		dump = "$ 0 " + resBar.getValue() + " " + sourceChooser.getSelectedIndex() + " " + colorChooser.getSelectedIndex() + " " + fixedEndsCheck.getState() + " " + view3dCheck.getState() + " " + speedBar.getValue() + " " + freqBar.getValue() + " " + brightnessBar.getValue() + " " + auxBar.getValue() + "\n";
+//		for (i = 0; i != sourceCount; i++) {
+//			OscSource src = sources[i];
+//			dump += "s " + src.x + " " + src.y + "\n";
+//		}
+//		for (i = 0; i != gridSizeXY;) {
+//			if (i >= gridSizeX) {
+//				int istart = i;
+//				for (; i < gridSizeXY && walls[i] == walls[i - gridSizeX] && medium[i] == medium[i - gridSizeX]; i++)
+//					;
+//				if (i > istart) {
+//					dump += "l " + (i - istart) + "\n";
+//					continue;
+//				}
+//			}
+//			boolean x = walls[i];
+//			int m = medium[i];
+//			int ct = 0;
+//			for (; i < gridSizeXY && walls[i] == x && medium[i] == m; ct++, i++)
+//				;
+//			dump += (x ? "w " : "c ") + ct + " " + m + "\n";
+//		}
+//		impDialog = new ImportDialog(this, dump);
+//		impDialog.show();
+//	}
+//
+//	void readImport(String s) {
+//		byte b[] = s.getBytes();
+//		int len = s.length();
+//		int p;
+//		int x = 0;
+//		int srci = 0;
+//		setupChooser.select(0);
+//		setup = (Setup) setupList.elementAt(0);
+//		for (p = 0; p < len;) {
+//			int l;
+//			int linelen = 0;
+//			for (l = 0; l != len - p; l++)
+//				if (b[l + p] == '\n' || b[l + p] == '\r') {
+//					linelen = l++;
+//					if (l + p < b.length && b[l + p] == '\n')
+//						l++;
+//					break;
+//				}
+//			String line = new String(b, p, linelen);
+//			StringTokenizer st = new StringTokenizer(line);
+//			while (st.hasMoreTokens()) {
+//				String type = st.nextToken();
+//				int tint = type.charAt(0);
+//				try {
+//					if (tint == '$') {
+//						int flags = new Integer(st.nextToken()).intValue();
+//
+//						resBar.setValue(new Integer(st.nextToken()).intValue());
+//						setResolution();
+//						reinit(false);
+//
+//						sourceChooser.select(new Integer(st.nextToken()).intValue());
+//						setSources();
+//
+//						colorChooser.select(new Integer(st.nextToken()).intValue());
+//						doColor();
+//
+//						fixedEndsCheck.setState(st.nextToken().compareTo("true") == 0);
+//						view3dCheck.setState(st.nextToken().compareTo("true") == 0);
+//						speedBar.setValue(new Integer(st.nextToken()).intValue());
+//						freqBar.setValue(new Integer(st.nextToken()).intValue());
+//						brightnessBar.setValue(new Integer(st.nextToken()).intValue());
+//						auxBar.setValue(new Integer(st.nextToken()).intValue());
+//						break;
+//					}
+//					if (tint == 'w' || tint == 'c') {
+//						boolean w = (tint == 'w');
+//						int ct = new Integer(st.nextToken()).intValue();
+//						int md = new Integer(st.nextToken()).intValue();
+//						for (; ct > 0; ct--, x++) {
+//							walls[x] = w;
+//							medium[x] = md;
+//						}
+//						break;
+//					}
+//					if (tint == 'l') {
+//						int ct = new Integer(st.nextToken()).intValue();
+//						for (; ct > 0; ct--, x++) {
+//							walls[x] = walls[x - gridSizeX];
+//							medium[x] = medium[x - gridSizeX];
+//						}
+//						break;
+//					}
+//					if (tint == 's') {
+//						int sx = new Integer(st.nextToken()).intValue();
+//						int sy = new Integer(st.nextToken()).intValue();
+//						sources[srci].x = sx;
+//						sources[srci].y = sy;
+//						srci++;
+//						break;
+//					}
+//					System.out.println("unknown type!");
+//				} catch (Exception ee) {
+//					ee.printStackTrace();
+//					break;
+//				}
+//				break;
+//			}
+//			p += l;
+//
+//		}
+//		calcExceptions();
+//		setDamping();
+//	}
+//
+//	class ImportDialogLayout implements LayoutManager {
+//		public ImportDialogLayout() {
+//		}
+//
+//		public void addLayoutComponent(String name, Component c) {
+//		}
+//
+//		public void removeLayoutComponent(Component c) {
+//		}
+//
+//		public Dimension preferredLayoutSize(Container target) {
+//			return new Dimension(500, 500);
+//		}
+//
+//		public Dimension minimumLayoutSize(Container target) {
+//			return new Dimension(100, 100);
+//		}
+//
+//		public void layoutContainer(Container target) {
+//			Insets insets = target.insets();
+//			int targetw = target.size().width - insets.left - insets.right;
+//			int targeth = target.size().height - (insets.top + insets.bottom);
+//			int i;
+//			int pw = 300;
+//			if (target.getComponentCount() == 0)
+//				return;
+//			Component cl = target.getComponent(target.getComponentCount() - 1);
+//			Dimension dl = cl.getPreferredSize();
+//			target.getComponent(0).move(insets.left, insets.top);
+//			int cw = target.size().width - insets.left - insets.right;
+//			int ch = target.size().height - insets.top - insets.bottom - dl.height;
+//			target.getComponent(0).resize(cw, ch);
+//			int h = ch + insets.top;
+//			int x = 0;
+//			for (i = 1; i < target.getComponentCount(); i++) {
+//				Component m = target.getComponent(i);
+//				if (m.isVisible()) {
+//					Dimension d = m.getPreferredSize();
+//					m.move(insets.left + x, h);
+//					m.resize(d.width, d.height);
+//					x += d.width;
+//				}
+//			}
+//		}
+//	};
+//
+//	class ImportDialog extends Dialog implements ActionListener {
+//		RippleFrame rframe;
+//		Button importButton, clearButton, closeButton;
+//		TextArea text;
+//
+//		ImportDialog(RippleFrame f, String str) {
+//			super(f, (str.length() > 0) ? "Export" : "Import", false);
+//			rframe = f;
+//			setLayout(new ImportDialogLayout());
+//			add(text = new TextArea(str, 10, 60, TextArea.SCROLLBARS_BOTH));
+//			add(importButton = new Button("Import"));
+//			importButton.addActionListener(this);
+//			add(clearButton = new Button("Clear"));
+//			clearButton.addActionListener(this);
+//			add(closeButton = new Button("Close"));
+//			closeButton.addActionListener(this);
+//			Point x = rframe.getLocationOnScreen();
+//			resize(400, 300);
+//			Dimension d = getSize();
+//			setLocation(x.x + (winSize.width - d.width) / 2, x.y + (winSize.height - d.height) / 2);
+//			show();
+//			if (str.length() > 0)
+//				text.selectAll();
+//		}
+//
+//		public void actionPerformed(ActionEvent e) {
+//			int i;
+//			Object src = e.getSource();
+//			if (src == importButton) {
+//				rframe.readImport(text.getText());
+//				setVisible(false);
+//			}
+//			if (src == closeButton)
+//				setVisible(false);
+//			if (src == clearButton)
+//				text.setText("");
+//		}
+//
+//		public boolean handleEvent(Event ev) {
+//			if (ev.id == Event.WINDOW_DESTROY) {
+//				rframe.requestFocus();
+//				setVisible(false);
+//				return true;
+//			}
+//			return super.handleEvent(ev);
+//		}
+//	}
 
 	abstract class Setup {
 		abstract String getName();
