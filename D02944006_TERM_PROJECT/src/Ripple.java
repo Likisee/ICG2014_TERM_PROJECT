@@ -1863,7 +1863,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 
 		void select() {
 			setFreqBar(15);
-			setBrightness(27);
 		}
 
 		Setup createNext() {
@@ -1878,7 +1877,6 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 
 		void select() {
 			setFreqBar(15);
-			setBrightness(19);
 		}
 
 		void doSetupSources() {
@@ -1900,8 +1898,12 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		}
 
 		void select() {
-			sourceChooser.select(SRC_4S1F);
 			setFreqBar(15);
+		}
+		
+		void doSetupSources() {
+			sourceChooser.select(SRC_4S1F);
+			setSources();
 		}
 
 		Setup createNext() {
@@ -1915,9 +1917,12 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		}
 
 		void select() {
-			sourceChooser.select(SRC_1S1F_PLANE);
-			// setBrightness(7);
 			setFreqBar(15);
+		}
+		
+		void doSetupSources() {
+			sourceChooser.select(SRC_1S1F_PLANE);
+			setSources();
 		}
 
 		Setup createNext() {
@@ -1931,8 +1936,7 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		}
 
 		void select() {
-			setBrightness(4);
-			setFreqBar(17);
+			setFreqBar(15);
 		}
 
 		void doSetupSources() {
@@ -1956,12 +1960,15 @@ class RippleFrame extends Frame implements ComponentListener, ActionListener, Ad
 		}
 
 		void select() {
-			sourceChooser.select(SRC_1S1F_MOVING);
-			setFreqBar(13);
-			setBrightness(20);
+			setFreqBar(15);
 			fixedEndsCheck.setState(false);
 		}
 
+		void doSetupSources() {
+			sourceChooser.select(SRC_1S1F_MOVING);
+			setSources();
+		}
+		
 		Setup createNext() {
 			return null;
 		}
