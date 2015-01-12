@@ -399,7 +399,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 		borderButton.addActionListener(this);
 		
 		// Initial view3DButton
-		view3dButton = new Button(" 3D視角  ");
+		view3dButton = new Button("切3D視角");
 		view3dButton.setFont(new Font( "Arial" , Font.BOLD , 40 ));
 		view3dButton.setPreferredSize(new Dimension(178, 50));
 		if (showControls) {
@@ -640,6 +640,11 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 	
 	void do3dView() {
 		is3dView = !is3dView;
+		if(is3dView) {
+			view3dButton.setLabel("切2D視角");
+		} else {
+			view3dButton.setLabel("切3D視角");
+		}
 	}
 
 	void setWall(int x, int y) {
@@ -772,17 +777,17 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 							
 							if (walls[gi])
 								continue;
-							if (fixedEndsCheck.getState()) {
+//							if (fixedEndsCheck.getState()) {
 								if (walls[gi - 1])	previ = 0;
 								if (walls[gi + 1])	nexti = 0;
 								if (walls[gi - gw])	prevj = 0;
 								if (walls[gi + gw])	nextj = 0;
-							} else {
-								if (walls[gi - 1])	previ = walls[gi + 1] ? func[gi] : func[gi + 1];
-								if (walls[gi + 1])	nexti = walls[gi - 1] ? func[gi] : func[gi - 1];
-								if (walls[gi - gw])	prevj = walls[gi + gw] ? func[gi] : func[gi + gw];
-								if (walls[gi + gw])	nextj = walls[gi - gw] ? func[gi] : func[gi - gw];
-							}
+//							} else {
+//								if (walls[gi - 1])	previ = walls[gi + 1] ? func[gi] : func[gi + 1];
+//								if (walls[gi + 1])	nexti = walls[gi - 1] ? func[gi] : func[gi - 1];
+//								if (walls[gi - gw])	prevj = walls[gi + gw] ? func[gi] : func[gi + gw];
+//								if (walls[gi + gw])	nextj = walls[gi - gw] ? func[gi] : func[gi - gw];
+//							}
 							basis = (nexti + previ + nextj + prevj) * .25f;
 						}
 						// what we are doing here (aside from damping) is rotating the point (func[gi], funci[gi]) an angle tadd about the point (basis, 0). Rather than call atan2/sin/cos, we use this faster method using some precomputed info.
@@ -880,7 +885,6 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 				}
 				setup.eachFrame();
 				steps++;
-				filterGrid();
 			}
 		}
 
@@ -917,45 +921,6 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 			}
 			cv.repaint(0);
 		}
-	}
-
-	// filter out high-frequency noise
-	int filterCount;
-
-	void filterGrid() {
-		int x, y;
-		if (fixedEndsCheck.getState()) {
-			return;
-		}
-		if (sourceCount > 0 && freqBarValue > 23) {
-			return;
-		}
-		if (sourceFreqCount >= 2 && auxBar.getValue() > 23) {
-			return;
-		}
-		if (++filterCount < 10) {
-			return;
-		}
-		filterCount = 0;
-		for (y = windowOffsetY; y < windowBottom; y++)
-			for (x = windowOffsetX; x < windowRight; x++) {
-				int gi = x + y * gw;
-				if (walls[gi]) {
-					continue;
-				}
-				if (func[gi - 1] < 0 && func[gi] > 0 && func[gi + 1] < 0 && !walls[gi + 1] && !walls[gi - 1]) {
-					func[gi] = (func[gi - 1] + func[gi + 1]) / 2;
-				}
-				if (func[gi - gw] < 0 && func[gi] > 0 && func[gi + gw] < 0 && !walls[gi - gw] && !walls[gi + gw]) {
-					func[gi] = (func[gi - gw] + func[gi + gw]) / 2;
-				}
-				if (func[gi - 1] > 0 && func[gi] < 0 && func[gi + 1] > 0 && !walls[gi + 1] && !walls[gi - 1]) {
-					func[gi] = (func[gi - 1] + func[gi + 1]) / 2;
-				}
-				if (func[gi - gw] > 0 && func[gi] < 0 && func[gi + gw] > 0 && !walls[gi - gw] && !walls[gi + gw]) {
-					func[gi] = (func[gi - gw] + func[gi + gw]) / 2;
-				}
-			}
 	}
 
 	void plotPixel(int x, int y, int pix) {
