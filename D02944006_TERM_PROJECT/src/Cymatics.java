@@ -653,17 +653,15 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 		}
 		return super.handleEvent(ev);
 	}
-
-	long getTimeMillis() {
-		try {
-			Long time = (Long) timerMethod.invoke(null, new Object[] {});
-			return time.longValue() / timerDiv;
-		} catch (Exception ee) {
-			ee.printStackTrace();
-			return 0;
+	
+	void destroyFrame() {
+		if (applet == null) {
+			dispose();
+		} else {
+			applet.destroyFrame();
 		}
 	}
-	
+
 	int frames = 0;
 	int steps = 0;
 
@@ -896,41 +894,117 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 		}
 	}
 
-	void plotPixel(int x, int y, int pix) {
-		if (x < 0 || x >= winSize.width) {
-			return;
+	void drawPlaneSource(int x1, int y1, int x2, int y2, float v, double w) {
+		if (y1 == y2) {
+			if (x1 == windowOffsetX) {
+				x1 = 0;
+			}
+			if (x2 == windowOffsetX) {
+				x2 = 0;
+			}
+			if (x1 == windowOffsetX + windowWidth - 1) {
+				x1 = gridSizeX - 1;
+			}
+			if (x2 == windowOffsetX + windowWidth - 1) {
+				x2 = gridSizeX - 1;
+			}
 		}
-		try {
-			pixels[x + y * winSize.width] = pix;
-		} catch (Exception e) {
+		if (x1 == x2) {
+			if (y1 == windowOffsetY) {
+				y1 = 0;
+			}
+			if (y2 == windowOffsetY) {
+				y2 = 0;
+			}
+			if (y1 == windowOffsetY + windowHeight - 1) {
+				y1 = gridSizeY - 1;
+			}
+			if (y2 == windowOffsetY + windowHeight - 1) {
+				y2 = gridSizeY - 1;
+			}
+		}
+
+		// need to draw a line from x1,y1 to x2,y2
+		if (x1 == x2 && y1 == y2) {
+			func[x1 + gw * y1] = v;
+			funci[x1 + gw * y1] = 0;
+		} else if (abs(y2 - y1) > abs(x2 - x1)) {
+			// y difference is greater, so we step along y's from min to max y and calculate x for each step
+			double sgn = sign(y2 - y1);
+			int x, y;
+			for (y = y1; y != y2 + sgn; y += sgn) {
+				x = x1 + (x2 - x1) * (y - y1) / (y2 - y1);
+				double ph = sgn * (y - y1) / (y2 - y1);
+				int gi = x + gw * y;
+				func[gi] = setup.calcSourcePhase(ph, v, w);
+				funci[gi] = 0;
+			}
+		} else {
+			// x difference is greater, so we step along x's from min to max x and calculate y for each step
+			double sgn = sign(x2 - x1);
+			int x, y;
+			for (x = x1; x != x2 + sgn; x += sgn) {
+				y = y1 + (y2 - y1) * (x - x1) / (x2 - x1);
+				double ph = sgn * (x - x1) / (x2 - x1);
+				int gi = x + gw * y;
+				func[gi] = setup.calcSourcePhase(ph, v, w);
+				funci[gi] = 0;
+			}
 		}
 	}
 
-	// draw a circle the slow and dirty way
-	void plotSource(int n, int xx, int yy) {
-		int rad = sourceRadius;
-		int j;
-		int col = (sourceColor.getRed() << 16) | (sourceColor.getGreen() << 8) | (sourceColor.getBlue()) | 0xFF000000;
-		if (n == selectedSource) {
-			col ^= 0xFFFFFF;
-		}
-		for (j = 0; j <= rad; j++) {
-			int k = (int) (Math.sqrt(rad * rad - j * j) + .5);
-			plotPixel(xx + j, yy + k, col);
-			plotPixel(xx + k, yy + j, col);
-			plotPixel(xx + j, yy - k, col);
-			plotPixel(xx - k, yy + j, col);
-			plotPixel(xx - j, yy + k, col);
-			plotPixel(xx + k, yy - j, col);
-			plotPixel(xx - j, yy - k, col);
-			plotPixel(xx - k, yy - j, col);
-			plotPixel(xx, yy + j, col);
-			plotPixel(xx, yy - j, col);
-			plotPixel(xx + j, yy, col);
-			plotPixel(xx - j, yy, col);
-		}
-	}
 
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	/**************************************************************************
+	 * 2D
+	 *************************************************************************/
+	
 	void draw2dView() {
 		int ix = 0;
 		int i, j, k, l;
@@ -985,7 +1059,46 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 			plotSource(i, xx, yy);
 		}
 	}
-
+	
+	// draw a circle the slow and dirty way
+	void plotSource(int n, int xx, int yy) {
+		int rad = sourceRadius;
+		int j;
+		int col = (sourceColor.getRed() << 16) | (sourceColor.getGreen() << 8) | (sourceColor.getBlue()) | 0xFF000000;
+		if (n == selectedSource) {
+			col ^= 0xFFFFFF;
+		}
+		for (j = 0; j <= rad; j++) {
+			int k = (int) (Math.sqrt(rad * rad - j * j) + .5);
+			plotPixel(xx + j, yy + k, col);
+			plotPixel(xx + k, yy + j, col);
+			plotPixel(xx + j, yy - k, col);
+			plotPixel(xx - k, yy + j, col);
+			plotPixel(xx - j, yy + k, col);
+			plotPixel(xx + k, yy - j, col);
+			plotPixel(xx - j, yy - k, col);
+			plotPixel(xx - k, yy - j, col);
+			plotPixel(xx, yy + j, col);
+			plotPixel(xx, yy - j, col);
+			plotPixel(xx + j, yy, col);
+			plotPixel(xx - j, yy, col);
+		}
+	}
+	
+	void plotPixel(int x, int y, int pix) {
+		if (x < 0 || x >= winSize.width) {
+			return;
+		}
+		try {
+			pixels[x + y * winSize.width] = pix;
+		} catch (Exception e) {
+		}
+	}
+	
+	/**************************************************************************
+	 * 3D
+	 *************************************************************************/
+	
 	double realxmx, realxmy, realymz, realzmy, realzmx, realymadd, realzmadd;
 	double viewAngle = pi, viewAngleDragStart;
 	double viewZoom = .775, viewZoomDragStart;
@@ -1005,7 +1118,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 	}
 
 	double scaleMult;
-
+	
 	void scaleworld() {
 		scalex = viewZoom * (winSize.width / 4) * viewDistance / 8;
 		scaley = -scalex;
@@ -1022,7 +1135,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 		realymadd = -viewHeight * scaley;
 		realzmadd = viewDistance;
 	}
-
+	
 	void draw3dView() {
 		int half = gridSizeX / 2;
 		scaleworld();
@@ -1197,295 +1310,12 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 			}
 		}
 	}
-
-	int abs(int x) {
-		return x < 0 ? -x : x;
-	}
-
-	void drawPlaneSource(int x1, int y1, int x2, int y2, float v, double w) {
-		if (y1 == y2) {
-			if (x1 == windowOffsetX) {
-				x1 = 0;
-			}
-			if (x2 == windowOffsetX) {
-				x2 = 0;
-			}
-			if (x1 == windowOffsetX + windowWidth - 1) {
-				x1 = gridSizeX - 1;
-			}
-			if (x2 == windowOffsetX + windowWidth - 1) {
-				x2 = gridSizeX - 1;
-			}
-		}
-		if (x1 == x2) {
-			if (y1 == windowOffsetY) {
-				y1 = 0;
-			}
-			if (y2 == windowOffsetY) {
-				y2 = 0;
-			}
-			if (y1 == windowOffsetY + windowHeight - 1) {
-				y1 = gridSizeY - 1;
-			}
-			if (y2 == windowOffsetY + windowHeight - 1) {
-				y2 = gridSizeY - 1;
-			}
-		}
-
-		// need to draw a line from x1,y1 to x2,y2
-		if (x1 == x2 && y1 == y2) {
-			func[x1 + gw * y1] = v;
-			funci[x1 + gw * y1] = 0;
-		} else if (abs(y2 - y1) > abs(x2 - x1)) {
-			// y difference is greater, so we step along y's from min to max y and calculate x for each step
-			double sgn = sign(y2 - y1);
-			int x, y;
-			for (y = y1; y != y2 + sgn; y += sgn) {
-				x = x1 + (x2 - x1) * (y - y1) / (y2 - y1);
-				double ph = sgn * (y - y1) / (y2 - y1);
-				int gi = x + gw * y;
-				func[gi] = setup.calcSourcePhase(ph, v, w);
-				funci[gi] = 0;
-			}
-		} else {
-			// x difference is greater, so we step along x's from min to max x and calculate y for each step
-			double sgn = sign(x2 - x1);
-			int x, y;
-			for (x = x1; x != x2 + sgn; x += sgn) {
-				y = y1 + (y2 - y1) * (x - x1) / (x2 - x1);
-				double ph = sgn * (x - x1) / (x2 - x1);
-				int gi = x + gw * y;
-				func[gi] = setup.calcSourcePhase(ph, v, w);
-				funci[gi] = 0;
-			}
-		}
-	}
-
-	public void adjustmentValueChanged(AdjustmentEvent e) {
-		System.out.print(((Scrollbar) e.getSource()).getValue() + "\n");
-		if (e.getSource() == resBar) {
-			setResolution();
-			reinit();
-		}
-		if (e.getSource() == brightnessBar) {
-			cv.repaint(0);
-		}
-		if (e.getSource() == freqBar) {
-			setFreq();
-		}
-	}
-
-	void setFreqBar(int x) {
-		freqBar.setValue(x);
-		freqBarValue = x;
-		freqTimeZero = 0;
-	}
-
-	void setFreq() {
-		// adjust time zero to maintain continuity in the freq func even though the frequency has changed.
-		double oldfreq = freqBarValue * freqMult;
-		freqBarValue = freqBar.getValue();
-		double newfreq = freqBarValue * freqMult;
-		double adj = newfreq - oldfreq;
-		freqTimeZero = t - oldfreq * (t - freqTimeZero) / newfreq;
-	}
-
-	void setResolution() {
-		windowWidth = windowHeight = resBar.getValue();
-		int border = windowWidth / 9;
-		if (border < 20) {
-			border = 20;
-		}
-		windowOffsetX = windowOffsetY = border;
-		gridSizeX = windowWidth + windowOffsetX * 2;
-		gridSizeY = windowHeight + windowOffsetY * 2;
-		windowBottom = windowOffsetY + windowHeight - 1;
-		windowRight = windowOffsetX + windowWidth - 1;
-	}
-
-	void setResolution(int x) {
-		resBar.setValue(x);
-		setResolution();
-		reinit();
-	}
-
-
-
-	public void itemStateChanged(ItemEvent e) {
-		if (e.getItemSelectable() == stoppedCheck) {
-			cv.repaint();
-			return;
-		}
-		if (e.getItemSelectable() == sourceChooser) {
-			if (sourceChooser.getSelectedIndex() != sourceIndex) {
-				setSources();
-			}
-		}
-		if (e.getItemSelectable() == setupChooser) {
-			doSetup();
-		}
-		if (e.getItemSelectable() == colorChooser) {
-			doColor();
-		}
-	}
-
-	void doSetup() {
-		t = 0;
-		if (resBar.getValue() < 32)
-			setResolution(32);
-		doBlank();
-		doBlankWalls();
-		// don't use previous source positions, use defaults
-		sourceCount = -1;
-		sourceChooser.select(SRC_1S1F);
-		setFreqBar(5);
-		setBrightness(15);
-		auxBar.setValue(1);
-		fixedEndsCheck.setState(true);
-		setup = (Setup) setupList.elementAt(setupChooser.getSelectedIndex());
-		setup.select();
-		setup.doSetupSources();
-		calcExceptions();
-	}
-
-	void setBrightness(int x) {
-		double m = x / 5.;
-		m = (Math.log(m) + 5.) * 100;
-		brightnessBar.setValue((int) m);
-	}
-
-
-
-	void setSources() {
-		int oldSCount = sourceCount;
-		boolean oldPlane = sourcePlane;
-		
-		sourceIndex = sourceChooser.getSelectedIndex();
-		sourcePlane = (sourceChooser.getSelectedIndex() >= SRC_1S1F_PLANE && sourceChooser.getSelectedIndex() <= SRC_2S1F_PLANE );
-		
-		sourceCount = 1;
-		sourceFreqCount = 1;
-		sourceMoving = false;
-		sourceWaveform = SWF_SIN;
-		
-		
-		switch (sourceChooser.getSelectedIndex()) {
-		case 0:
-			sourceCount = 0;
-			break;
-		case 2:
-			sourceCount = 2;
-			break;
-		case 3:
-			sourceCount = 4;
-			break;
-		case 4:
-			sourceMoving = true;
-			break;
-		case 6:
-			sourceCount = 2;
-			break;
-		}
-		
-		if (sourceMoving) {
-			auxFunction = AUX_SPEED;
-			auxBar.setValue(7);
-			auxLabel.setText("移動速度");
-			auxLabel.setFont(new Font( "Arial" , Font.BOLD , 40 ));
-		}  else {
-			auxFunction = AUX_NONE;
-			auxBar.hide();
-			auxLabel.hide();
-		}
-		if (auxFunction != AUX_NONE) {
-			auxBar.show();
-			auxLabel.show();
-		}
-		validate();
-
-		if (sourcePlane) {
-			sourceCount *= 2;
-			if (!(oldPlane && oldSCount == sourceCount)) {
-				int x2 = windowOffsetX + windowWidth - 1;
-				int y2 = windowOffsetY + windowHeight - 1;
-				sources[0] = new OscSource(windowOffsetX, windowOffsetY + 1);
-				sources[1] = new OscSource(x2, windowOffsetY + 1);
-				sources[2] = new OscSource(windowOffsetX, y2);
-				sources[3] = new OscSource(x2, y2);
-			}
-		} else if (!(!oldPlane && oldSCount == sourceCount)) {
-			sources[0] = new OscSource(gridSizeX / 2, windowOffsetY + 1);
-			sources[1] = new OscSource(gridSizeX / 2, gridSizeY - windowOffsetY - 2);
-			sources[2] = new OscSource(windowOffsetX + 1, gridSizeY / 2);
-			sources[3] = new OscSource(gridSizeX - windowOffsetX - 2, gridSizeY / 2);
-			for (int i = 4; i < sourceCount; i++) {
-				sources[i] = new OscSource(windowOffsetX + 1 + i * 2, gridSizeY / 2);
-			}
-		}
-	}
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+	// TODO
 	/**************************************************************************
 	 * ColorScheme Setup
 	 *************************************************************************/
 	
-	void doColor() {
-		int cn = colorChooser.getSelectedIndex();
-		wallColor = schemeColors[cn][0];
-		posColor = schemeColors[cn][1];
-		negColor = schemeColors[cn][2];
-		zeroColor = schemeColors[cn][3];
-		sourceColor = schemeColors[cn][4];
-	}
-
 	void addDefaultColorScheme() {
 
 		decodeColorScheme(0, "#000000 #0033CC #335CD6 #0029A3 #CC0000", "水波藍");
@@ -1673,6 +1503,130 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 	}
 	
 	/**************************************************************************
+	 * ItemEvent
+	 *************************************************************************/
+
+	public void itemStateChanged(ItemEvent e) {
+		if (e.getItemSelectable() == stoppedCheck) {
+			cv.repaint();
+			return;
+		}
+		if (e.getItemSelectable() == sourceChooser) {
+			if (sourceChooser.getSelectedIndex() != sourceIndex) {
+				setSources();
+			}
+		}
+		if (e.getItemSelectable() == setupChooser) {
+			doSetup();
+		}
+		if (e.getItemSelectable() == colorChooser) {
+			doColor();
+		}
+	}
+
+	void setSources() {
+		int oldSCount = sourceCount;
+		boolean oldPlane = sourcePlane;
+		
+		sourceIndex = sourceChooser.getSelectedIndex();
+		sourcePlane = (sourceChooser.getSelectedIndex() >= SRC_1S1F_PLANE && sourceChooser.getSelectedIndex() <= SRC_2S1F_PLANE );
+		
+		sourceCount = 1;
+		sourceFreqCount = 1;
+		sourceMoving = false;
+		sourceWaveform = SWF_SIN;
+		
+		
+		switch (sourceChooser.getSelectedIndex()) {
+		case 0:
+			sourceCount = 0;
+			break;
+		case 2:
+			sourceCount = 2;
+			break;
+		case 3:
+			sourceCount = 4;
+			break;
+		case 4:
+			sourceMoving = true;
+			break;
+		case 6:
+			sourceCount = 2;
+			break;
+		}
+		
+		if (sourceMoving) {
+			auxFunction = AUX_SPEED;
+			auxBar.setValue(7);
+			auxLabel.setText("移動速度");
+			auxLabel.setFont(new Font( "Arial" , Font.BOLD , 40 ));
+		}  else {
+			auxFunction = AUX_NONE;
+			auxBar.hide();
+			auxLabel.hide();
+		}
+		if (auxFunction != AUX_NONE) {
+			auxBar.show();
+			auxLabel.show();
+		}
+		validate();
+
+		if (sourcePlane) {
+			sourceCount *= 2;
+			if (!(oldPlane && oldSCount == sourceCount)) {
+				int x2 = windowOffsetX + windowWidth - 1;
+				int y2 = windowOffsetY + windowHeight - 1;
+				sources[0] = new OscSource(windowOffsetX, windowOffsetY + 1);
+				sources[1] = new OscSource(x2, windowOffsetY + 1);
+				sources[2] = new OscSource(windowOffsetX, y2);
+				sources[3] = new OscSource(x2, y2);
+			}
+		} else if (!(!oldPlane && oldSCount == sourceCount)) {
+			sources[0] = new OscSource(gridSizeX / 2, windowOffsetY + 1);
+			sources[1] = new OscSource(gridSizeX / 2, gridSizeY - windowOffsetY - 2);
+			sources[2] = new OscSource(windowOffsetX + 1, gridSizeY / 2);
+			sources[3] = new OscSource(gridSizeX - windowOffsetX - 2, gridSizeY / 2);
+			for (int i = 4; i < sourceCount; i++) {
+				sources[i] = new OscSource(windowOffsetX + 1 + i * 2, gridSizeY / 2);
+			}
+		}
+	}
+	
+	void doSetup() {
+		t = 0;
+		if (resBar.getValue() < 32)
+			setResolution(32);
+		doBlank();
+		doBlankWalls();
+		// don't use previous source positions, use defaults
+		sourceCount = -1;
+		sourceChooser.select(SRC_1S1F);
+		setFreqBar(5);
+		setBrightness(15);
+		auxBar.setValue(1);
+		fixedEndsCheck.setState(true);
+		setup = (Setup) setupList.elementAt(setupChooser.getSelectedIndex());
+		setup.select();
+		setup.doSetupSources();
+		calcExceptions();
+	}
+
+	void setBrightness(int x) {
+		double m = x / 5.;
+		m = (Math.log(m) + 5.) * 100;
+		brightnessBar.setValue((int) m);
+	}
+	
+	void doColor() {
+		int cn = colorChooser.getSelectedIndex();
+		wallColor = schemeColors[cn][0];
+		posColor = schemeColors[cn][1];
+		negColor = schemeColors[cn][2];
+		zeroColor = schemeColors[cn][3];
+		sourceColor = schemeColors[cn][4];
+	}
+	
+	/**************************************************************************
 	 * ActionEvent
 	 *************************************************************************/
 	
@@ -1695,13 +1649,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 		}
 	}
 	
-	void destroyFrame() {
-		if (applet == null) {
-			dispose();
-		} else {
-			applet.destroyFrame();
-		}
-	}
+
 
 	void doBlank() {
 		int x, y;
@@ -1746,6 +1694,58 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 
 	void setWall(int x, int y, boolean b) {
 		walls[x + gw * y] = b;
+	}
+	
+	/**************************************************************************
+	 * AdjustmentEvent
+	 *************************************************************************/
+	
+	public void adjustmentValueChanged(AdjustmentEvent e) {
+		System.out.print(((Scrollbar) e.getSource()).getValue() + "\n");
+		if (e.getSource() == resBar) {
+			setResolution();
+			reinit();
+		}
+		if (e.getSource() == brightnessBar) {
+			cv.repaint(0);
+		}
+		if (e.getSource() == freqBar) {
+			setFreq();
+		}
+	}
+
+	void setFreqBar(int x) {
+		freqBar.setValue(x);
+		freqBarValue = x;
+		freqTimeZero = 0;
+	}
+
+	void setFreq() {
+		// adjust time zero to maintain continuity in the freq func even though the frequency has changed.
+		double oldfreq = freqBarValue * freqMult;
+		freqBarValue = freqBar.getValue();
+		double newfreq = freqBarValue * freqMult;
+		double adj = newfreq - oldfreq;
+		freqTimeZero = t - oldfreq * (t - freqTimeZero) / newfreq;
+	}
+
+	void setResolution() {
+		windowWidth = windowHeight = resBar.getValue();
+		int border = windowWidth / 9;
+		if (border < 20) {
+			border = 20;
+		}
+		windowOffsetX = windowOffsetY = border;
+		gridSizeX = windowWidth + windowOffsetX * 2;
+		gridSizeY = windowHeight + windowOffsetY * 2;
+		windowBottom = windowOffsetY + windowHeight - 1;
+		windowRight = windowOffsetX + windowWidth - 1;
+	}
+
+	void setResolution(int x) {
+		resBar.setValue(x);
+		setResolution();
+		reinit();
 	}
 	
 	/**************************************************************************
@@ -1951,10 +1951,23 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 	 * Calculating Function
 	 *************************************************************************/
 	
+	int abs(int x) {
+		return x < 0 ? -x : x;
+	}
+	
 	int sign(int x) {
 		return (x < 0) ? -1 : (x == 0) ? 0 : 1;
 	}
 	
+	long getTimeMillis() {
+		try {
+			Long time = (Long) timerMethod.invoke(null, new Object[] {});
+			return time.longValue() / timerDiv;
+		} catch (Exception ee) {
+			ee.printStackTrace();
+			return 0;
+		}
+	}
 	
 	/**************************************************************************
 	 * Object Class
