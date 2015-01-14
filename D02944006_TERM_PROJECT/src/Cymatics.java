@@ -895,6 +895,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 	}
 
 	void drawPlaneSource(int x1, int y1, int x2, int y2, float v, double w) {
+		// correct x1, x2
 		if (y1 == y2) {
 			if (x1 == windowOffsetX) {
 				x1 = 0;
@@ -909,6 +910,8 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 				x2 = gridSizeX - 1;
 			}
 		}
+		
+		// correct y1, y2
 		if (x1 == x2) {
 			if (y1 == windowOffsetY) {
 				y1 = 0;
@@ -924,12 +927,11 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 			}
 		}
 
-		// need to draw a line from x1,y1 to x2,y2
-		if (x1 == x2 && y1 == y2) {
+		// need to draw a line from x1,y1 to x2,y2 smoothly by interpolation
+		if (x1 == x2 && y1 == y2) {					// a straight line
 			func[x1 + gw * y1] = v;
 			funci[x1 + gw * y1] = 0;
-		} else if (abs(y2 - y1) > abs(x2 - x1)) {
-			// y difference is greater, so we step along y's from min to max y and calculate x for each step
+		} else if (abs(y2 - y1) > abs(x2 - x1)) {	// y difference is greater, so we step along y's from min to max y and calculate x for each step
 			double sgn = sign(y2 - y1);
 			int x, y;
 			for (y = y1; y != y2 + sgn; y += sgn) {
@@ -939,8 +941,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 				func[gi] = setup.calcSourcePhase(ph, v, w);
 				funci[gi] = 0;
 			}
-		} else {
-			// x difference is greater, so we step along x's from min to max x and calculate y for each step
+		} else {									// x difference is greater, so we step along x's from min to max x and calculate y for each step
 			double sgn = sign(x2 - x1);
 			int x, y;
 			for (x = x1; x != x2 + sgn; x += sgn) {
@@ -1002,7 +1003,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 	
 	
 	/**************************************************************************
-	 * 2D
+	 * Draw 2D
 	 *************************************************************************/
 	
 	void draw2dView() {
@@ -1096,7 +1097,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 	}
 	
 	/**************************************************************************
-	 * 3D
+	 * Draw 3D
 	 *************************************************************************/
 	
 	double realxmx, realxmy, realymz, realzmy, realzmx, realymadd, realzmadd;
@@ -1109,33 +1110,6 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 	int xpoints[] = new int[4], ypoints[] = new int[4];
 	final double viewDistance = 66;
 
-	void map3d(double x, double y, double z, int xpoints[], int ypoints[], int pt) {
-		double realx = realxmx * x + realxmy * y;
-		double realy = realymz * z + realymadd;
-		double realz = realzmx * x + realzmy * y + realzmadd;
-		xpoints[pt] = centerX3d + (int) (realx / realz);
-		ypoints[pt] = centerY3d - (int) (realy / realz);
-	}
-
-	double scaleMult;
-	
-	void scaleworld() {
-		scalex = viewZoom * (winSize.width / 4) * viewDistance / 8;
-		scaley = -scalex;
-		int y = (int) (scaley * viewHeight / viewDistance);
-
-		centerX3d = winSize.width / 2;
-		centerY3d = winSize.height / 2 - y;
-		scaleMult = 16. / (windowWidth / 2);
-		realxmx = -viewAngleCos * scaleMult * scalex;
-		realxmy = viewAngleSin * scaleMult * scalex;
-		realymz = -brightMult * scaley;
-		realzmy = viewAngleCos * scaleMult;
-		realzmx = viewAngleSin * scaleMult;
-		realymadd = -viewHeight * scaley;
-		realzmadd = viewDistance;
-	}
-	
 	void draw3dView() {
 		int half = gridSizeX / 2;
 		scaleworld();
@@ -1199,7 +1173,33 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 				break;
 		}
 	}
+	
+	double scaleMult;
+	void scaleworld() {
+		scalex = viewZoom * (winSize.width / 4) * viewDistance / 8;
+		scaley = -scalex;
+		int y = (int) (scaley * viewHeight / viewDistance);
 
+		centerX3d = winSize.width / 2;
+		centerY3d = winSize.height / 2 - y;
+		scaleMult = 16. / (windowWidth / 2);
+		realxmx = -viewAngleCos * scaleMult * scalex;
+		realxmy = viewAngleSin * scaleMult * scalex;
+		realymz = -brightMult * scaley;
+		realzmy = viewAngleCos * scaleMult;
+		realzmx = viewAngleSin * scaleMult;
+		realymadd = -viewHeight * scaley;
+		realzmadd = viewDistance;
+	}
+
+	void map3d(double x, double y, double z, int xpoints[], int ypoints[], int pt) {
+		double realx = realxmx * x + realxmy * y;
+		double realy = realymz * z + realymadd;
+		double realz = realzmx * x + realzmy * y + realzmadd;
+		xpoints[pt] = centerX3d + (int) (realx / realz);
+		ypoints[pt] = centerY3d - (int) (realy / realz);
+	}
+	
 	int computeColor(int gix, double c) {
 		double h = func[gix] * brightMult;
 		if (c < 0)	c = 0;
@@ -1258,16 +1258,6 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 		}
 	}
 
-	int interp(int x1, int y1, int x2, int y2, int x) {
-		if (x1 == x2) {
-			return y1;
-		}
-		if (x < x1 && x < x2 || x > x1 && x > x2) {
-			System.out.print("interp out of bounds\n");
-		}
-		return (int) (y1 + ((double) x - x1) * (y2 - y1) / (x2 - x1));
-	}
-
 	void fillTriangle1(int x1, int y1, int x2, int y2, int y3, int col) {
 		// x2 == x3
 		int dir = (x1 > x2) ? -1 : 1;
@@ -1311,6 +1301,16 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 		}
 	}
 	
+	int interp(int x1, int y1, int x2, int y2, int x) {
+		if (x1 == x2) {
+			return y1;
+		}
+		if (x < x1 && x < x2 || x > x1 && x > x2) {
+			System.out.print("interp out of bounds\n");
+		}
+		return (int) (y1 + ((double) x - x1) * (y2 - y1) / (x2 - x1));
+	}
+	
 	// TODO
 	/**************************************************************************
 	 * ColorScheme Setup
@@ -1318,9 +1318,9 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 	
 	void addDefaultColorScheme() {
 
-		decodeColorScheme(0, "#000000 #0033CC #335CD6 #0029A3 #CC0000", "¤ôªiÂÅ");
-		decodeColorScheme(1, "#800000 #ffffff #000000 #808080 #CC0000", "¶Â¥Õ¦â");
-		decodeColorScheme(2, "#800000 #ffffff #ffffff #808080 #CC0000", "Cymatics");
+		decodeColorScheme(0, "#000000 #3333D6 #0000A3 #0000CC #CC0000", "Water");
+		decodeColorScheme(1, "#800000 #ffffff #ffffff #808080 #CC0000", "Cymatics1: White Plate");
+		decodeColorScheme(2, "#800000 #000000 #000000 #808080 #CC0000", "Cymatics2: Black Plate");
 	}
 
 	void decodeColorScheme(int cn, String s, String name) {
