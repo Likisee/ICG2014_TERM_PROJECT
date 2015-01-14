@@ -88,25 +88,17 @@ class CymaticsLayout implements LayoutManager {
 };
 
 public class Cymatics extends Applet implements ComponentListener {
-	static CymaticsFrame ogf;
 
+	boolean started = false;
+	
+	static CymaticsFrame ogf;
+	
 	void destroyFrame() {
 		if (ogf != null) {
 			ogf.dispose();
 		}
 		ogf = null;
 		repaint();
-	}
-
-	boolean started = false;
-
-	public void init() {
-		addComponentListener(this);
-	}
-
-	public static void main(String args[]) {
-		ogf = new CymaticsFrame(null);
-		ogf.init();
 	}
 
 	void showFrame() {
@@ -130,11 +122,22 @@ public class Cymatics extends Applet implements ComponentListener {
 		g.drawString(s, 10, 30);
 	}
 
-	public void componentHidden(ComponentEvent e) {
+	public void init() {
+		addComponentListener(this);
 	}
+	
+	public static void main(String args[]) {
+		ogf = new CymaticsFrame(null);
+		ogf.init();
+	}
+	
+	/**************************************************************************
+	 * ComponentEvent
+	 *************************************************************************/
 
-	public void componentMoved(ComponentEvent e) {
-	}
+	public void componentHidden(ComponentEvent e) {}
+
+	public void componentMoved(ComponentEvent e) {}
 
 	public void componentShown(ComponentEvent e) {
 		showFrame();
@@ -271,6 +274,55 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 	
 	Color wallColor, posColor, negColor, zeroColor, sourceColor;
 	Color schemeColors[][];
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	public void init() {
 		// useFrame? showControls? main!!
@@ -602,59 +654,6 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 		return super.handleEvent(ev);
 	}
 
-	void destroyFrame() {
-		if (applet == null) {
-			dispose();
-		} else {
-			applet.destroyFrame();
-		}
-	}
-
-	void doBlank() {
-		int x, y;
-		for (x = 0; x != gridSizeXY; x++) {
-			func[x] = funci[x] = 1e-10f;
-		}
-	}
-
-	void doBlankWalls() {
-		int x, y;
-		for (x = 0; x != gridSizeXY; x++) {
-			walls[x] = false;
-		}
-		calcExceptions();
-	}
-
-	void doBorder() {
-		int x, y;
-		for (x = 0; x < gridSizeX; x++) {
-			setWall(x, windowOffsetY);
-			setWall(x, windowBottom);
-		}
-		for (y = 0; y < gridSizeY; y++) {
-			setWall(windowOffsetX, y);
-			setWall(windowRight, y);
-		}
-		calcExceptions();
-	}
-	
-	void do3dView() {
-		is3dView = !is3dView;
-		if(is3dView) {
-			view3dButton.setLabel("切2D視角");
-		} else {
-			view3dButton.setLabel("切3D視角");
-		}
-	}
-
-	void setWall(int x, int y) {
-		walls[x + gw * y] = true;
-	}
-
-	void setWall(int x, int y, boolean b) {
-		walls[x + gw * y] = b;
-	}
-
 	long getTimeMillis() {
 		try {
 			Long time = (Long) timerMethod.invoke(null, new Object[] {});
@@ -664,33 +663,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 			return 0;
 		}
 	}
-
-	void calcExceptions() {
-		int x, y;
-		// if walls are in place on border, need to extend that through hidden area to avoid "leaks"
-		for (x = 0; x != gridSizeX; x++) {
-			for (y = 0; y < windowOffsetY; y++) {
-				walls[x + gw * y] = walls[x + gw * windowOffsetY];
-				walls[x + gw * (gridSizeY - y - 1)] = walls[x + gw * (gridSizeY - windowOffsetY - 1)];
-			}
-		}
-		for (y = 0; y < gridSizeY; y++) {
-			for (x = 0; x < windowOffsetX; x++) {
-				walls[x + gw * y] = walls[windowOffsetX + gw * y];
-				walls[gridSizeX - x - 1 + gw * y] = walls[gridSizeX - windowOffsetX - 1 + gw * y];
-			}
-		}
-		// generate exceptional array, which is useful for doing special handling of elements
-		for (x = 1; x < gridSizeX - 1; x++) {
-			for (y = 1; y < gridSizeY - 1; y++) {
-				int gi = x + gw * y;
-				exceptional[gi] = walls[gi - 1] || walls[gi + 1] || walls[gi - gw] || walls[gi + gw] || walls[gi];
-			}
-		}
-		// put some extra exceptions at the corners to ensure tadd2, sinth and etc to get calculated
-		exceptional[1 + gw] = exceptional[gridSizeX - 2 + gw] = exceptional[1 + (gridSizeY - 2) * gw] = exceptional[gridSizeX - 2 + (gridSizeY - 2) * gw] = true;
-	}
-
+	
 	int frames = 0;
 	int steps = 0;
 
@@ -1288,9 +1261,496 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 		}
 	}
 
-	int sign(int x) {
-		return (x < 0) ? -1 : (x == 0) ? 0 : 1;
+	public void adjustmentValueChanged(AdjustmentEvent e) {
+		System.out.print(((Scrollbar) e.getSource()).getValue() + "\n");
+		if (e.getSource() == resBar) {
+			setResolution();
+			reinit();
+		}
+		if (e.getSource() == brightnessBar) {
+			cv.repaint(0);
+		}
+		if (e.getSource() == freqBar) {
+			setFreq();
+		}
 	}
+
+	void setFreqBar(int x) {
+		freqBar.setValue(x);
+		freqBarValue = x;
+		freqTimeZero = 0;
+	}
+
+	void setFreq() {
+		// adjust time zero to maintain continuity in the freq func even though the frequency has changed.
+		double oldfreq = freqBarValue * freqMult;
+		freqBarValue = freqBar.getValue();
+		double newfreq = freqBarValue * freqMult;
+		double adj = newfreq - oldfreq;
+		freqTimeZero = t - oldfreq * (t - freqTimeZero) / newfreq;
+	}
+
+	void setResolution() {
+		windowWidth = windowHeight = resBar.getValue();
+		int border = windowWidth / 9;
+		if (border < 20) {
+			border = 20;
+		}
+		windowOffsetX = windowOffsetY = border;
+		gridSizeX = windowWidth + windowOffsetX * 2;
+		gridSizeY = windowHeight + windowOffsetY * 2;
+		windowBottom = windowOffsetY + windowHeight - 1;
+		windowRight = windowOffsetX + windowWidth - 1;
+	}
+
+	void setResolution(int x) {
+		resBar.setValue(x);
+		setResolution();
+		reinit();
+	}
+
+
+
+	public void itemStateChanged(ItemEvent e) {
+		if (e.getItemSelectable() == stoppedCheck) {
+			cv.repaint();
+			return;
+		}
+		if (e.getItemSelectable() == sourceChooser) {
+			if (sourceChooser.getSelectedIndex() != sourceIndex) {
+				setSources();
+			}
+		}
+		if (e.getItemSelectable() == setupChooser) {
+			doSetup();
+		}
+		if (e.getItemSelectable() == colorChooser) {
+			doColor();
+		}
+	}
+
+	void doSetup() {
+		t = 0;
+		if (resBar.getValue() < 32)
+			setResolution(32);
+		doBlank();
+		doBlankWalls();
+		// don't use previous source positions, use defaults
+		sourceCount = -1;
+		sourceChooser.select(SRC_1S1F);
+		setFreqBar(5);
+		setBrightness(15);
+		auxBar.setValue(1);
+		fixedEndsCheck.setState(true);
+		setup = (Setup) setupList.elementAt(setupChooser.getSelectedIndex());
+		setup.select();
+		setup.doSetupSources();
+		calcExceptions();
+	}
+
+	void setBrightness(int x) {
+		double m = x / 5.;
+		m = (Math.log(m) + 5.) * 100;
+		brightnessBar.setValue((int) m);
+	}
+
+
+
+	void setSources() {
+		int oldSCount = sourceCount;
+		boolean oldPlane = sourcePlane;
+		
+		sourceIndex = sourceChooser.getSelectedIndex();
+		sourcePlane = (sourceChooser.getSelectedIndex() >= SRC_1S1F_PLANE && sourceChooser.getSelectedIndex() <= SRC_2S1F_PLANE );
+		
+		sourceCount = 1;
+		sourceFreqCount = 1;
+		sourceMoving = false;
+		sourceWaveform = SWF_SIN;
+		
+		
+		switch (sourceChooser.getSelectedIndex()) {
+		case 0:
+			sourceCount = 0;
+			break;
+		case 2:
+			sourceCount = 2;
+			break;
+		case 3:
+			sourceCount = 4;
+			break;
+		case 4:
+			sourceMoving = true;
+			break;
+		case 6:
+			sourceCount = 2;
+			break;
+		}
+		
+		if (sourceMoving) {
+			auxFunction = AUX_SPEED;
+			auxBar.setValue(7);
+			auxLabel.setText("移動速度");
+			auxLabel.setFont(new Font( "Arial" , Font.BOLD , 40 ));
+		}  else {
+			auxFunction = AUX_NONE;
+			auxBar.hide();
+			auxLabel.hide();
+		}
+		if (auxFunction != AUX_NONE) {
+			auxBar.show();
+			auxLabel.show();
+		}
+		validate();
+
+		if (sourcePlane) {
+			sourceCount *= 2;
+			if (!(oldPlane && oldSCount == sourceCount)) {
+				int x2 = windowOffsetX + windowWidth - 1;
+				int y2 = windowOffsetY + windowHeight - 1;
+				sources[0] = new OscSource(windowOffsetX, windowOffsetY + 1);
+				sources[1] = new OscSource(x2, windowOffsetY + 1);
+				sources[2] = new OscSource(windowOffsetX, y2);
+				sources[3] = new OscSource(x2, y2);
+			}
+		} else if (!(!oldPlane && oldSCount == sourceCount)) {
+			sources[0] = new OscSource(gridSizeX / 2, windowOffsetY + 1);
+			sources[1] = new OscSource(gridSizeX / 2, gridSizeY - windowOffsetY - 2);
+			sources[2] = new OscSource(windowOffsetX + 1, gridSizeY / 2);
+			sources[3] = new OscSource(gridSizeX - windowOffsetX - 2, gridSizeY / 2);
+			for (int i = 4; i < sourceCount; i++) {
+				sources[i] = new OscSource(windowOffsetX + 1 + i * 2, gridSizeY / 2);
+			}
+		}
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	/**************************************************************************
+	 * ColorScheme Setup
+	 *************************************************************************/
+	
+	void doColor() {
+		int cn = colorChooser.getSelectedIndex();
+		wallColor = schemeColors[cn][0];
+		posColor = schemeColors[cn][1];
+		negColor = schemeColors[cn][2];
+		zeroColor = schemeColors[cn][3];
+		sourceColor = schemeColors[cn][4];
+	}
+
+	void addDefaultColorScheme() {
+
+		decodeColorScheme(0, "#000000 #0033CC #335CD6 #0029A3 #CC0000", "水波藍");
+		decodeColorScheme(1, "#800000 #ffffff #000000 #808080 #CC0000", "黑白色");
+		decodeColorScheme(2, "#800000 #ffffff #ffffff #808080 #CC0000", "Cymatics");
+	}
+
+	void decodeColorScheme(int cn, String s, String name) {
+		StringTokenizer st = new StringTokenizer(s);
+		while (st.hasMoreTokens()) {
+			int i;
+			for (i = 0; i != 5; i++)
+				schemeColors[cn][i] = Color.decode(st.nextToken());
+		}
+		colorChooser.add(name);
+	}
+	
+	/**************************************************************************
+	 * WaveSource Setup
+	 *************************************************************************/
+
+	abstract class Setup {
+		abstract String getName();
+
+		abstract void select();
+
+		void doSetupSources() {
+			setSources();
+		}
+
+		void deselect() {
+		}
+
+		double sourceStrength() {
+			return 1;
+		}
+
+		abstract Setup createNext();
+
+		void eachFrame() {
+		}
+
+		float calcSourcePhase(double ph, float v, double w) {
+			return v;
+		}
+	};
+
+	class SingleSourceSetup extends Setup {
+		String getName() {
+			return "1點波源";
+		}
+
+		void select() {
+//			setFreqBar(15);
+		}
+
+		Setup createNext() {
+			return new DoubleSourceSetup();
+		}
+	}
+
+	class DoubleSourceSetup extends Setup {
+		String getName() {
+			return "2點波源";
+		}
+
+		void select() {
+//			setFreqBar(15);
+		}
+
+		void doSetupSources() {
+			sourceChooser.select(SRC_2S1F);
+			setSources();
+			sources[0].y = gridSizeY / 2 - 8;
+			sources[1].y = gridSizeY / 2 + 8;
+			sources[0].x = sources[1].x = gridSizeX / 2;
+		}
+
+		Setup createNext() {
+			return new QuadrupleSourceSetup();
+		}
+	}
+
+	class QuadrupleSourceSetup extends Setup {
+		String getName() {
+			return "4點波源";
+		}
+
+		void select() {
+//			setFreqBar(15);
+		}
+		
+		void doSetupSources() {
+			sourceChooser.select(SRC_4S1F);
+			setSources();
+		}
+
+		Setup createNext() {
+			return new PlaneWaveSetup();
+		}
+	}
+
+	class PlaneWaveSetup extends Setup {
+		String getName() {
+			return "1線波源";
+		}
+
+		void select() {
+//			setFreqBar(15);
+		}
+		
+		void doSetupSources() {
+			sourceChooser.select(SRC_1S1F_PLANE);
+			setSources();
+		}
+
+		Setup createNext() {
+			return new IntersectingPlaneWavesSetup();
+		}
+	}
+
+	class IntersectingPlaneWavesSetup extends Setup {
+		String getName() {
+			return "交錯線波源";
+		}
+
+		void select() {
+//			setFreqBar(15);
+		}
+
+		void doSetupSources() {
+			sourceChooser.select(SRC_2S1F_PLANE);
+			setSources();
+			sources[0].y = sources[1].y = windowOffsetY;
+			sources[0].x = windowOffsetX + 1;
+			sources[2].x = sources[3].x = windowOffsetX;
+			sources[2].y = windowOffsetY + 1;
+			sources[3].y = windowOffsetY + windowHeight - 1;
+		}
+
+		Setup createNext() {
+			return new DopplerSetup();
+		}
+	}
+
+	class DopplerSetup extends Setup {
+		String getName() {
+			return "都普勒效應";
+		}
+
+		void select() {
+//			setFreqBar(15);
+		}
+
+		void doSetupSources() {
+			sourceChooser.select(SRC_1S1F_MOVING);
+			setSources();
+		}
+		
+		Setup createNext() {
+			return null;
+		}
+	}
+	
+	/**************************************************************************
+	 * Event
+	 *************************************************************************/
+
+	
+	/**************************************************************************
+	 * ComponentEvent
+	 *************************************************************************/
+	
+	public void componentHidden(ComponentEvent e) {}
+
+	public void componentMoved(ComponentEvent e) {}
+
+	public void componentShown(ComponentEvent e) {
+		cv.repaint();
+	}
+
+	public void componentResized(ComponentEvent e) {
+		handleResize();
+		cv.repaint(100);
+	}
+	
+	/**************************************************************************
+	 * ActionEvent
+	 *************************************************************************/
+	
+	public void actionPerformed(ActionEvent e) {
+		if (e.getSource() == blankButton) {
+			doBlank();
+			cv.repaint();
+		}
+		if (e.getSource() == blankWallsButton) {
+			doBlankWalls();
+			cv.repaint();
+		}
+		if (e.getSource() == borderButton) {
+			doBorder();
+			cv.repaint();
+		}
+		if (e.getSource() == view3dButton) {
+			do3dView();
+			cv.repaint();
+		}
+	}
+	
+	void destroyFrame() {
+		if (applet == null) {
+			dispose();
+		} else {
+			applet.destroyFrame();
+		}
+	}
+
+	void doBlank() {
+		int x, y;
+		for (x = 0; x != gridSizeXY; x++) {
+			func[x] = funci[x] = 1e-10f;
+		}
+	}
+
+	void doBlankWalls() {
+		int x, y;
+		for (x = 0; x != gridSizeXY; x++) {
+			walls[x] = false;
+		}
+		calcExceptions();
+	}
+
+	void doBorder() {
+		int x, y;
+		for (x = 0; x < gridSizeX; x++) {
+			setWall(x, windowOffsetY);
+			setWall(x, windowBottom);
+		}
+		for (y = 0; y < gridSizeY; y++) {
+			setWall(windowOffsetX, y);
+			setWall(windowRight, y);
+		}
+		calcExceptions();
+	}
+	
+	void do3dView() {
+		is3dView = !is3dView;
+		if(is3dView) {
+			view3dButton.setLabel("切2D視角");
+		} else {
+			view3dButton.setLabel("切3D視角");
+		}
+	}
+
+	void setWall(int x, int y) {
+		walls[x + gw * y] = true;
+	}
+
+	void setWall(int x, int y, boolean b) {
+		walls[x + gw * y] = b;
+	}
+	
+	/**************************************************************************
+	 * MouseEvent
+	 *************************************************************************/
 
 	void edit(MouseEvent e) {
 		if (is3dView) {
@@ -1379,89 +1839,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 		}
 		selectedSource = -1;
 	}
-
-	public void componentHidden(ComponentEvent e) {
-	}
-
-	public void componentMoved(ComponentEvent e) {
-	}
-
-	public void componentShown(ComponentEvent e) {
-		cv.repaint();
-	}
-
-	public void componentResized(ComponentEvent e) {
-		handleResize();
-		cv.repaint(100);
-	}
-
-	public void actionPerformed(ActionEvent e) {
-		if (e.getSource() == blankButton) {
-			doBlank();
-			cv.repaint();
-		}
-		if (e.getSource() == blankWallsButton) {
-			doBlankWalls();
-			cv.repaint();
-		}
-		if (e.getSource() == borderButton) {
-			doBorder();
-			cv.repaint();
-		}
-		if (e.getSource() == view3dButton) {
-			do3dView();
-			cv.repaint();
-		}
-	}
-
-	public void adjustmentValueChanged(AdjustmentEvent e) {
-		System.out.print(((Scrollbar) e.getSource()).getValue() + "\n");
-		if (e.getSource() == resBar) {
-			setResolution();
-			reinit();
-		}
-		if (e.getSource() == brightnessBar) {
-			cv.repaint(0);
-		}
-		if (e.getSource() == freqBar) {
-			setFreq();
-		}
-	}
-
-	void setFreqBar(int x) {
-		freqBar.setValue(x);
-		freqBarValue = x;
-		freqTimeZero = 0;
-	}
-
-	void setFreq() {
-		// adjust time zero to maintain continuity in the freq func even though the frequency has changed.
-		double oldfreq = freqBarValue * freqMult;
-		freqBarValue = freqBar.getValue();
-		double newfreq = freqBarValue * freqMult;
-		double adj = newfreq - oldfreq;
-		freqTimeZero = t - oldfreq * (t - freqTimeZero) / newfreq;
-	}
-
-	void setResolution() {
-		windowWidth = windowHeight = resBar.getValue();
-		int border = windowWidth / 9;
-		if (border < 20) {
-			border = 20;
-		}
-		windowOffsetX = windowOffsetY = border;
-		gridSizeX = windowWidth + windowOffsetX * 2;
-		gridSizeY = windowHeight + windowOffsetY * 2;
-		windowBottom = windowOffsetY + windowHeight - 1;
-		windowRight = windowOffsetX + windowWidth - 1;
-	}
-
-	void setResolution(int x) {
-		resBar.setValue(x);
-		setResolution();
-		reinit();
-	}
-
+	
 	public void mouseDragged(MouseEvent e) {
 		if (is3dView) {
 			view3dDrag(e);
@@ -1508,11 +1886,9 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 		cv.repaint();
 	}
 
-	public void mouseClicked(MouseEvent e) {
-	}
+	public void mouseClicked(MouseEvent e) {}
 
-	public void mouseEntered(MouseEvent e) {
-	}
+	public void mouseEntered(MouseEvent e) {}
 
 	public void mouseExited(MouseEvent e) {
 		dragStartX = -1;
@@ -1534,143 +1910,56 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 		dragSet = dragClear = false;
 		cv.repaint();
 	}
-
-	public void itemStateChanged(ItemEvent e) {
-		if (e.getItemSelectable() == stoppedCheck) {
-			cv.repaint();
-			return;
-		}
-		if (e.getItemSelectable() == sourceChooser) {
-			if (sourceChooser.getSelectedIndex() != sourceIndex) {
-				setSources();
+	
+	/**************************************************************************
+	 * Global Variable Setting Function
+	 *************************************************************************/
+	
+	
+	/**************************************************************************
+	 * Global Variable Calculating Function
+	 *************************************************************************/
+	
+	void calcExceptions() {
+		int x, y;
+		// if walls are in place on border, need to extend that through hidden area to avoid "leaks"
+		for (x = 0; x != gridSizeX; x++) {
+			for (y = 0; y < windowOffsetY; y++) {
+				walls[x + gw * y] = walls[x + gw * windowOffsetY];
+				walls[x + gw * (gridSizeY - y - 1)] = walls[x + gw * (gridSizeY - windowOffsetY - 1)];
 			}
 		}
-		if (e.getItemSelectable() == setupChooser) {
-			doSetup();
-		}
-		if (e.getItemSelectable() == colorChooser) {
-			doColor();
-		}
-	}
-
-	void doSetup() {
-		t = 0;
-		if (resBar.getValue() < 32)
-			setResolution(32);
-		doBlank();
-		doBlankWalls();
-		// don't use previous source positions, use defaults
-		sourceCount = -1;
-		sourceChooser.select(SRC_1S1F);
-		setFreqBar(5);
-		setBrightness(15);
-		auxBar.setValue(1);
-		fixedEndsCheck.setState(true);
-		setup = (Setup) setupList.elementAt(setupChooser.getSelectedIndex());
-		setup.select();
-		setup.doSetupSources();
-		calcExceptions();
-	}
-
-	void setBrightness(int x) {
-		double m = x / 5.;
-		m = (Math.log(m) + 5.) * 100;
-		brightnessBar.setValue((int) m);
-	}
-
-	void doColor() {
-		int cn = colorChooser.getSelectedIndex();
-		wallColor = schemeColors[cn][0];
-		posColor = schemeColors[cn][1];
-		negColor = schemeColors[cn][2];
-		zeroColor = schemeColors[cn][3];
-		sourceColor = schemeColors[cn][4];
-	}
-
-	void addDefaultColorScheme() {
-
-		decodeColorScheme(0, "#000000 #0033CC #335CD6 #0029A3 #CC0000", "水波藍");
-		decodeColorScheme(1, "#800000 #ffffff #000000 #808080 #CC0000", "黑白色");
-	}
-
-	void decodeColorScheme(int cn, String s, String name) {
-		StringTokenizer st = new StringTokenizer(s);
-		while (st.hasMoreTokens()) {
-			int i;
-			for (i = 0; i != 5; i++)
-				schemeColors[cn][i] = Color.decode(st.nextToken());
-		}
-		colorChooser.add(name);
-	}
-
-	void setSources() {
-		int oldSCount = sourceCount;
-		boolean oldPlane = sourcePlane;
-		
-		sourceIndex = sourceChooser.getSelectedIndex();
-		sourcePlane = (sourceChooser.getSelectedIndex() >= SRC_1S1F_PLANE && sourceChooser.getSelectedIndex() <= SRC_2S1F_PLANE );
-		
-		sourceCount = 1;
-		sourceFreqCount = 1;
-		sourceMoving = false;
-		sourceWaveform = SWF_SIN;
-		
-		
-		switch (sourceChooser.getSelectedIndex()) {
-		case 0:
-			sourceCount = 0;
-			break;
-		case 2:
-			sourceCount = 2;
-			break;
-		case 3:
-			sourceCount = 4;
-			break;
-		case 4:
-			sourceMoving = true;
-			break;
-		case 6:
-			sourceCount = 2;
-			break;
-		}
-		
-		if (sourceMoving) {
-			auxFunction = AUX_SPEED;
-			auxBar.setValue(7);
-			auxLabel.setText("移動速度");
-			auxLabel.setFont(new Font( "Arial" , Font.BOLD , 40 ));
-		}  else {
-			auxFunction = AUX_NONE;
-			auxBar.hide();
-			auxLabel.hide();
-		}
-		if (auxFunction != AUX_NONE) {
-			auxBar.show();
-			auxLabel.show();
-		}
-		validate();
-
-		if (sourcePlane) {
-			sourceCount *= 2;
-			if (!(oldPlane && oldSCount == sourceCount)) {
-				int x2 = windowOffsetX + windowWidth - 1;
-				int y2 = windowOffsetY + windowHeight - 1;
-				sources[0] = new OscSource(windowOffsetX, windowOffsetY + 1);
-				sources[1] = new OscSource(x2, windowOffsetY + 1);
-				sources[2] = new OscSource(windowOffsetX, y2);
-				sources[3] = new OscSource(x2, y2);
-			}
-		} else if (!(!oldPlane && oldSCount == sourceCount)) {
-			sources[0] = new OscSource(gridSizeX / 2, windowOffsetY + 1);
-			sources[1] = new OscSource(gridSizeX / 2, gridSizeY - windowOffsetY - 2);
-			sources[2] = new OscSource(windowOffsetX + 1, gridSizeY / 2);
-			sources[3] = new OscSource(gridSizeX - windowOffsetX - 2, gridSizeY / 2);
-			for (int i = 4; i < sourceCount; i++) {
-				sources[i] = new OscSource(windowOffsetX + 1 + i * 2, gridSizeY / 2);
+		for (y = 0; y < gridSizeY; y++) {
+			for (x = 0; x < windowOffsetX; x++) {
+				walls[x + gw * y] = walls[windowOffsetX + gw * y];
+				walls[gridSizeX - x - 1 + gw * y] = walls[gridSizeX - windowOffsetX - 1 + gw * y];
 			}
 		}
+		// generate exceptional array, which is useful for doing special handling of elements
+		for (x = 1; x < gridSizeX - 1; x++) {
+			for (y = 1; y < gridSizeY - 1; y++) {
+				int gi = x + gw * y;
+				exceptional[gi] = walls[gi - 1] || walls[gi + 1] || walls[gi - gw] || walls[gi + gw] || walls[gi];
+			}
+		}
+		// put some extra exceptions at the corners to ensure tadd2, sinth and etc to get calculated
+		exceptional[1 + gw] = exceptional[gridSizeX - 2 + gw] = exceptional[1 + (gridSizeY - 2) * gw] = exceptional[gridSizeX - 2 + (gridSizeY - 2) * gw] = true;
 	}
 
+	
+	/**************************************************************************
+	 * Calculating Function
+	 *************************************************************************/
+	
+	int sign(int x) {
+		return (x < 0) ? -1 : (x == 0) ? 0 : 1;
+	}
+	
+	
+	/**************************************************************************
+	 * Object Class
+	 *************************************************************************/	
+	
 	class OscSource {
 		int x;
 		int y;
@@ -1689,149 +1978,4 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 			return ((y - windowOffsetY) * winSize.height + winSize.height / 2) / windowHeight;
 		}
 	};
-
-	abstract class Setup {
-		abstract String getName();
-
-		abstract void select();
-
-		void doSetupSources() {
-			setSources();
-		}
-
-		void deselect() {
-		}
-
-		double sourceStrength() {
-			return 1;
-		}
-
-		abstract Setup createNext();
-
-		void eachFrame() {
-		}
-
-		float calcSourcePhase(double ph, float v, double w) {
-			return v;
-		}
-	};
-
-	class SingleSourceSetup extends Setup {
-		String getName() {
-			return "1點波源";
-		}
-
-		void select() {
-			setFreqBar(15);
-		}
-
-		Setup createNext() {
-			return new DoubleSourceSetup();
-		}
-	}
-
-	class DoubleSourceSetup extends Setup {
-		String getName() {
-			return "2點波源";
-		}
-
-		void select() {
-			setFreqBar(15);
-		}
-
-		void doSetupSources() {
-			sourceChooser.select(SRC_2S1F);
-			setSources();
-			sources[0].y = gridSizeY / 2 - 8;
-			sources[1].y = gridSizeY / 2 + 8;
-			sources[0].x = sources[1].x = gridSizeX / 2;
-		}
-
-		Setup createNext() {
-			return new QuadrupleSourceSetup();
-		}
-	}
-
-	class QuadrupleSourceSetup extends Setup {
-		String getName() {
-			return "4點波源";
-		}
-
-		void select() {
-			setFreqBar(15);
-		}
-		
-		void doSetupSources() {
-			sourceChooser.select(SRC_4S1F);
-			setSources();
-		}
-
-		Setup createNext() {
-			return new PlaneWaveSetup();
-		}
-	}
-
-	class PlaneWaveSetup extends Setup {
-		String getName() {
-			return "1線波源";
-		}
-
-		void select() {
-			setFreqBar(15);
-		}
-		
-		void doSetupSources() {
-			sourceChooser.select(SRC_1S1F_PLANE);
-			setSources();
-		}
-
-		Setup createNext() {
-			return new IntersectingPlaneWavesSetup();
-		}
-	}
-
-	class IntersectingPlaneWavesSetup extends Setup {
-		String getName() {
-			return "交錯線波源";
-		}
-
-		void select() {
-			setFreqBar(15);
-		}
-
-		void doSetupSources() {
-			sourceChooser.select(SRC_2S1F_PLANE);
-			setSources();
-			sources[0].y = sources[1].y = windowOffsetY;
-			sources[0].x = windowOffsetX + 1;
-			sources[2].x = sources[3].x = windowOffsetX;
-			sources[2].y = windowOffsetY + 1;
-			sources[3].y = windowOffsetY + windowHeight - 1;
-		}
-
-		Setup createNext() {
-			return new DopplerSetup();
-		}
-	}
-
-	class DopplerSetup extends Setup {
-		String getName() {
-			return "都普勒效應";
-		}
-
-		void select() {
-			setFreqBar(15);
-			fixedEndsCheck.setState(false);
-		}
-
-		void doSetupSources() {
-			sourceChooser.select(SRC_1S1F_MOVING);
-			setSources();
-		}
-		
-		Setup createNext() {
-			return null;
-		}
-	}
-
 }
