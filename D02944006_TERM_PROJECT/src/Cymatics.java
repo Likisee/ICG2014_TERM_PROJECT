@@ -3,11 +3,27 @@ import java.applet.Applet;
 import java.util.Vector;
 import java.util.Random;
 import java.awt.image.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.Math;
 import java.awt.event.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.StringTokenizer;
+
+import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MidiEvent;
+import javax.sound.midi.MidiMessage;
+import javax.sound.midi.MidiSystem;
+import javax.sound.midi.MidiUnavailableException;
+import javax.sound.midi.Sequence;
+import javax.sound.midi.Sequencer;
+import javax.sound.midi.ShortMessage;
+import javax.sound.midi.Track;
 
 class CymaticsCanvas extends Canvas {
 	CymaticsFrame cf;
@@ -277,6 +293,11 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 	boolean isStop = false;
 	double dampcoef = 1;
 	
+//	String musicFolderPath = "D:\\ICG2014_TERM_PROJECT_MIDI\\";
+//	String [] musicSource;
+//	Sequencer sequencer = null;
+//	String [] musicMainNote;
+	
 	/**************************************************************************
 	 * Applet Main
 	 *************************************************************************/	
@@ -331,6 +352,20 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 		cv.addMouseMotionListener(this);
 		cv.addMouseListener(this);
 		main.add(cv);
+		
+		// Initial musicSource & musicChooser
+		musicSource = new String [999];
+		musicChooser = new Choice();
+		File musicFolder = new File(musicFolderPath);
+		File [] musicFiles = musicFolder.listFiles();
+		for(int i = 0; i < musicFiles.length; i++)  {
+			musicChooser.add(musicFiles[i].getName());
+			musicSource[i] = musicFiles[i].getName();
+		}
+		musicChooser.addItemListener(this);
+		if (showControls) {
+			main.add(musicChooser);
+		}
 
 		// Initial setupList -> setupChooser
 		setupList = new Vector();
@@ -743,6 +778,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 				}
 				setup.eachFrame();
 				steps++;
+				filterGrid();
 			}
 		}
 
@@ -759,9 +795,31 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 
 		realg.drawImage(dbimage, 0, 0, this);
 		if (dragStartX >= 0 && !is3dView) {
+			// POSITION
 			int x = dragStartX * windowWidth / windowSize.width;
 			int y = windowHeight - 1 - (dragStartY * windowHeight / windowSize.height);
 			String s = "(" + x + "," + y + ")";
+			realg.setColor(Color.white);
+			FontMetrics fm = realg.getFontMetrics();
+			int h = 5 + fm.getAscent();
+			realg.fillRect(0, windowSize.height - h, fm.stringWidth(s) + 10, h);
+			realg.setColor(Color.black);
+			realg.drawString(s, 5, windowSize.height - 5);
+		} else {
+			// NOTE // TODO
+			int midiNoteIndex = Long.valueOf(getTimeMillis() - timeMidiStart).intValue() * musicMult / 1000;
+			String s = "";
+			try{
+				String note = musicMainNote[midiNoteIndex];
+				setFreqBarByNote(note);
+				s = "midiNoteIndex: " + midiNoteIndex;
+				if(midiNoteIndex < musicLength * musicMult) {
+					s = "NOTE: " + musicMainNote[midiNoteIndex];				
+				} 
+			} catch (Exception e) {
+				// 
+			}
+
 			realg.setColor(Color.white);
 			FontMetrics fm = realg.getFontMetrics();
 			int h = 5 + fm.getAscent();
@@ -932,6 +990,42 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 			pixels[x + y * windowSize.width] = pix;
 		} catch (Exception e) {
 		}
+	}
+	
+	// filter out high-frequency noise
+	int filterCount;
+
+	void filterGrid() {
+		int x, y;
+		if (sourceCount > 0 && freqBarValue > 23) {
+			return;
+		}
+		if (sourceFreqCount >= 2 && auxBar.getValue() > 23) {
+			return;
+		}
+		if (++filterCount < 10) {
+			return;
+		}
+		filterCount = 0;
+		for (y = windowOffsetY; y < windowBottom; y++)
+			for (x = windowOffsetX; x < windowRight; x++) {
+				int gi = x + y * gw;
+				if (walls[gi]) {
+					continue;
+				}
+				if (func[gi - 1] < 0 && func[gi] > 0 && func[gi + 1] < 0 && !walls[gi + 1] && !walls[gi - 1]) {
+					func[gi] = (func[gi - 1] + func[gi + 1]) / 2;
+				}
+				if (func[gi - gw] < 0 && func[gi] > 0 && func[gi + gw] < 0 && !walls[gi - gw] && !walls[gi + gw]) {
+					func[gi] = (func[gi - gw] + func[gi + gw]) / 2;
+				}
+				if (func[gi - 1] > 0 && func[gi] < 0 && func[gi + 1] > 0 && !walls[gi + 1] && !walls[gi - 1]) {
+					func[gi] = (func[gi - 1] + func[gi + 1]) / 2;
+				}
+				if (func[gi - gw] > 0 && func[gi] < 0 && func[gi + gw] > 0 && !walls[gi - gw] && !walls[gi + gw]) {
+					func[gi] = (func[gi - gw] + func[gi + gw]) / 2;
+				}
+			}
 	}
 	
 	/**************************************************************************
@@ -1145,7 +1239,6 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 		return (int) (y1 + ((double) x - x1) * (y2 - y1) / (x2 - x1));
 	}
 	
-	// TODO
 	/**************************************************************************
 	 * ColorScheme Setup
 	 *************************************************************************/
@@ -1341,6 +1434,9 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 	 *************************************************************************/
 
 	public void itemStateChanged(ItemEvent e) {
+		if (e.getItemSelectable() == musicChooser) {
+			doMusic();
+		}
 		if (e.getItemSelectable() == sourceChooser) {
 			if (sourceChooser.getSelectedIndex() != sourceIndex) {
 				setSources();
@@ -1351,6 +1447,22 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 		}
 		if (e.getItemSelectable() == colorChooser) {
 			doColor();
+		}
+	}
+	
+	void doMusic() {
+		int musicIndex = musicChooser.getSelectedIndex();
+		try {
+			this.doPlaySequencer(musicFolderPath + musicSource[musicIndex]);
+		} catch (MidiUnavailableException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InvalidMidiDataException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 
@@ -1793,7 +1905,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 	}
 	
 	/**************************************************************************
-	 * Object Class
+	 * Object OscillationSource
 	 *************************************************************************/	
 	
 	class OscillationSource {
@@ -1814,4 +1926,166 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 			return ((y - windowOffsetY) * windowSize.height + windowSize.height / 2) / windowHeight;
 		}
 	};
+	
+	/**************************************************************************
+	 * MUSIC
+	 *************************************************************************/	
+	
+	String musicFolderPath = "D:\\ICG2014_TERM_PROJECT_MIDI\\";
+	String [] musicSource = null;
+	Sequence sequence = null;
+	Sequencer sequencer = null;
+	int maxTick;
+	int musicLength = 0;
+	double eachTickSec = 0.0;
+	int musicMult = 4;
+	String [] musicMainNote = null;
+	int [][] musicNoteCount = null; // {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"}
+	Long timeMidiStart = new Long(0);
+	
+	void doCloseSequencer() throws MidiUnavailableException, IOException, InvalidMidiDataException {
+		if(sequencer != null) {
+			sequencer.close();
+			sequencer = null;
+		}
+	}
+	
+	void doCalMusicNoteCount(String filepath) throws InvalidMidiDataException, IOException {
+	    // maxTick
+	    maxTick = Long.valueOf(sequencer.getTickLength()).intValue();
+	    System.out.println(sequencer.getTickLength());
+	    
+	    // calculate musicMainNote[]
+	    musicLength = Long.valueOf(sequencer.getMicrosecondLength() / 1000000).intValue();
+	    System.out.println(sequencer.getMicrosecondLength());
+	    eachTickSec = Double.valueOf(musicLength) / Double.valueOf(maxTick);
+	    System.out.println(eachTickSec);
+	    musicMainNote = new String[musicLength * musicMult + 1];
+	    musicNoteCount = new int[musicLength * musicMult + 1][12];
+
+	    sequence = MidiSystem.getSequence(new File(filepath));
+        for (Track track : sequence.getTracks()) {
+            for (int i=0; i < track.size(); i++) { 
+                MidiEvent event = track.get(i);
+                int currentBase = Double.valueOf(Math.floor(event.getTick() * eachTickSec * musicMult)).intValue();
+                MidiMessage message = event.getMessage();
+                if (message instanceof ShortMessage) {
+                    ShortMessage sm = (ShortMessage) message;
+                    int key = sm.getData1();
+                    int note = key % 12;
+                    musicNoteCount[currentBase][note]++;
+                }
+            }
+	    }
+        this.doCalMainNote();
+	}
+	
+	void doCalMainNote() {
+		for(int index = 0; index < musicLength * musicMult; index ++) {
+			int max = 0;
+			int maxI = 0;		
+			for(int i = 0; i < musicNoteCount[index].length; i++) {
+				if(musicNoteCount[index][i] > max) {
+					max = musicNoteCount[index][i];
+					maxI = i;
+				}
+			}
+			switch (maxI) { // {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"}
+			case 0:
+				musicMainNote[index] = "C";
+				break;
+			case 1:
+				musicMainNote[index] = "C#";
+				break;
+			case 2:
+				musicMainNote[index] = "D";
+				break;
+			case 3:
+				musicMainNote[index] = "D#";
+				break;
+			case 4:
+				musicMainNote[index] = "E";
+				break;
+			case 5:
+				musicMainNote[index] = "F";
+				break;
+			case 6:
+				musicMainNote[index] = "F#";
+				break;
+			case 7:
+				musicMainNote[index] = "G";
+				break;
+			case 8:
+				musicMainNote[index] = "G#";
+				break;
+			case 9:
+				musicMainNote[index] = "A";
+				break;
+			case 10:
+				musicMainNote[index] = "A#";
+				break;
+			case 11:
+				musicMainNote[index] = "B";
+				break;
+			}
+			System.out.println(index + ": " + musicMainNote[index]);
+		}
+	}
+	
+	void doPlaySequencer(String filepath) throws MidiUnavailableException, IOException, InvalidMidiDataException { // doPlayMIDI
+		
+		this.doCloseSequencer();
+		sequencer = MidiSystem.getSequencer();
+		
+		// Opens the device, indicating that it should now acquire any
+	    // system resources it requires and become operational.
+		sequencer.open();
+
+	    // create a stream from a file
+	    InputStream is = new BufferedInputStream(new FileInputStream(new File(filepath)));
+
+	    // Sets the current sequence on which the sequencer operates.
+	    // The stream must point to MIDI file data.
+	    sequencer.setSequence(is);
+	    
+	    // doCalSequence
+	    this.doCalMusicNoteCount(filepath);
+	    
+	    // Starts playback of the MIDI data in the currently loaded sequence.
+	    sequencer.start();
+	    
+	    // timeMidiStart
+	    timeMidiStart = getTimeMillis();
+	}
+	
+	void setFreqBarByNote(String note) {
+		 // {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"}
+		if(note.equals("C")) {
+			setFreqBar(1);
+		} else if(note.equals("C#")) {
+			setFreqBar(2);
+		} else if(note.equals("D")) {
+			setFreqBar(3);
+		} else if(note.equals("D#")) {
+			setFreqBar(4);
+		} else if(note.equals("E")) {
+			setFreqBar(5);
+		} else if(note.equals("F")) {
+			setFreqBar(6);
+		} else if(note.equals("F#")) {
+			setFreqBar(7);
+		} else if(note.equals("G")) {
+			setFreqBar(8);
+		} else if(note.equals("G#")) {
+			setFreqBar(9);
+		} else if(note.equals("A")) {
+			setFreqBar(10);
+		} else if(note.equals("A#")) {
+			setFreqBar(11);
+		} else if(note.equals("B")) {
+			setFreqBar(12);
+		}
+		setFreq();
+	}
+
 }
