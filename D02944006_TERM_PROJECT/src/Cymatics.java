@@ -169,7 +169,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 		adjustResolution = true;
 	}
 	
-	Thread engine = null;
+//	Thread engine = null;
 
 	Dimension windowSize;
 	Image dbimage;
