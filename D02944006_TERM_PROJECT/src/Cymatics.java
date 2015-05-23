@@ -293,11 +293,6 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 	boolean isStop = false;
 	double dampcoef = 1;
 	
-//	String musicFolderPath = "D:\\ICG2014_TERM_PROJECT_MIDI\\";
-//	String [] musicSource;
-//	Sequencer sequencer = null;
-//	String [] musicMainNote;
-	
 	/**************************************************************************
 	 * Applet Main
 	 *************************************************************************/	
@@ -634,7 +629,6 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 
 	public void updateCymatics(Graphics realg) {
 		if (windowSize == null || windowSize.width == 0) {
-			// this is the workaround for some weird bug in IE which causes the applet to not show up properly
 			handleResize();
 			return;
 		}
@@ -667,7 +661,6 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 			for (iter = 0; iter != iterCount; iter++) {
 				int jstart, jend, jinc;
 				if (moveDown) {
-					// we process the rows in alternate directions each time to avoid any directional bias.
 					jstart = 1;
 					jend = mxy;
 					jinc = 1;
@@ -698,7 +691,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 					int gi = j * gw + istart;
 					int giEnd = j * gw + iend;
 					for (; gi != giEnd; gi += iinc) {
-						// calculate equilibrium point of this element's oscillation
+						// the equilibrium point
 						float previ = func[gi - 1];
 						float nexti = func[gi + 1];
 						float prevj = func[gi - gw];
@@ -720,7 +713,6 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 							if (walls[gi + gw])	nextj = 0;
 							basis = (nexti + previ + nextj + prevj) * .25f;
 						}
-						// what we are doing here (aside from damping) is rotating the point (func[gi], funci[gi]) an angle tadd about the point (basis, 0). Rather than call atan2/sin/cos, we use this faster method using some precomputed info.
 						float a = 0;
 						float b = 0;
 						a = func[gi] - basis;
@@ -830,7 +822,6 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 
 		if (!isStop) {
 			long diff = getTimeMillis() - sysTime;
-			// we want the time it takes for a wave to travel across the screen to be more-or-less constant, but don't do anything after 5 seconds
 			if (adjustResolution && diff > 0 && sysTime < startTime + 1000 && windowOffsetX * diff / iterCount < 55) {
 				increaseResolution = true;
 				startTime = sysTime;
@@ -876,7 +867,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 		if (x1 == x2 && y1 == y2) {					// a straight line
 			func[x1 + gw * y1] = v;
 			funci[x1 + gw * y1] = 0;
-		} else if (abs(y2 - y1) > abs(x2 - x1)) {	// y difference is greater, so we step along y's from min to max y and calculate x for each step
+		} else if (abs(y2 - y1) > abs(x2 - x1)) {	// y difference is greater, cutting y to calculate x
 			double sgn = sign(y2 - y1);
 			int x, y;
 			for (y = y1; y != y2 + sgn; y += sgn) {
@@ -886,7 +877,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 				func[gi] = setup.calcSourcePhase(ph, v, w);
 				funci[gi] = 0;
 			}
-		} else {									// x difference is greater, so we step along x's from min to max x and calculate y for each step
+		} else {									// x difference is greater, cutting x to calculate y
 			double sgn = sign(x2 - x1);
 			int x, y;
 			for (x = x1; x != x2 + sgn; x += sgn) {
@@ -957,7 +948,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 		}
 	}
 	
-	// draw a circle the slow and dirty way
+	// draw a circle
 	void plotSource(int n, int xx, int yy) {
 		int rad = sourceRadius;
 		int j;
@@ -992,7 +983,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 		}
 	}
 	
-	// filter out high-frequency noise
+	// filter the high-frequency bug
 	int filterCount;
 
 	void filterGrid() {
@@ -1050,7 +1041,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 		int ydir, ystart, yend;
 		int sc = windowRight - 1;
 
-		// figure out what order to render the grid elements so that the ones in front are rendered first.
+		// which side render first
 		if (viewAngleCos > 0) {
 			ystart = sc;
 			yend = windowOffsetY - 1;
@@ -1091,7 +1082,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 					map3d(x + 1 - half, y + 1 - half, func[gi + gw + 1], xpoints, ypoints, 3);
 					double qx = func[gi + 1] - func[gi];
 					double qy = func[gi + gw] - func[gi];
-					// calculate lighting
+					// calculate light
 					double normdot = (qx + qy + zval) * (1 / 1.73) / Math.sqrt(qx * qx + qy * qy + zval2);
 					int col = computeColor(gi, normdot);
 					fillTriangle(xpoints[0], ypoints[0], xpoints[1], ypoints[1], xpoints[3], ypoints[3], col);
@@ -1689,7 +1680,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 			return;
 		}
 		if (dragX == x && dragY == y)
-			editFuncPoint(x, y);
+			editWavePoint(x, y);
 		else {
 			// need to draw a line from old x,y to new x,y and
 			// call editFuncPoint for each point on that line. yuck.
@@ -1703,7 +1694,7 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 				dragY = y;
 				for (y = y1; y <= y2; y++) {
 					x = x1 + (x2 - x1) * (y - y1) / (y2 - y1);
-					editFuncPoint(x, y);
+					editWavePoint(x, y);
 				}
 			} else {
 				// x difference is greater, so we step along x's from min to max x and calculate y for each step
@@ -1715,13 +1706,13 @@ class CymaticsFrame extends Frame implements ComponentListener, ActionListener, 
 				dragY = y;
 				for (x = x1; x <= x2; x++) {
 					y = y1 + (y2 - y1) * (x - x1) / (x2 - x1);
-					editFuncPoint(x, y);
+					editWavePoint(x, y);
 				}
 			}
 		}
 	}
 
-	void editFuncPoint(int x, int y) {
+	void editWavePoint(int x, int y) {
 		int xp = x * windowWidth / windowSize.width + windowOffsetX;
 		int yp = y * windowHeight / windowSize.height + windowOffsetY;
 		int gi = xp + yp * gw;
